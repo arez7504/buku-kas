@@ -187,16 +187,16 @@ Dokumen ini berisi spesifikasi kebutuhan minimal (Minimum Viable Product / MVP) 
 - `build_runner: ^2.15.1` (runner generator Dart - dev dependency)
 
 ### D. Hasil `flutter test` Terakhir
-- **Total Test:** 55
-- **Lulus:** 55 (100%)
+- **Total Test:** 61
+- **Lulus:** 61 (100%)
 - **Gagal:** 0
 - **Cakupan Pengujian:**
-  - `backup_service_test.dart` (18 test): Penamaan berkas YYYY-MM-DD, round-trip serialisasi objek utuh, kalkulasi ringkasan, dan pengujian penolakan menyeluruh (JSON rusak, root non-objek, missing fields, formatVersion asing/non-integer, tanggal ekspor rusak, saldo non-integer, ID duplikat, tipe kategori salah, nominal pecahan/string, nominal <= 0, foreign key wallet/category tidak terdaftar di berkas, transfer ke dompet yang sama / target tidak ada).
+  - `backup_service_test.dart` (21 test): Penamaan berkas YYYY-MM-DD, round-trip serialisasi objek utuh, kalkulasi ringkasan termasuk `exportedAt` & `exportedAtText`, serta pengujian penolakan menyeluruh (JSON rusak, root non-objek, missing fields, formatVersion asing/non-integer, tanggal ekspor rusak, saldo non-integer, ID duplikat, tipe kategori salah, nominal pecahan/string, nominal <= 0, foreign key wallet/category tidak terdaftar di berkas, transfer ke dompet yang sama / target tidak ada, file .json sembarang yang isinya bukan backup, dan penolakan file > 20 MB).
   - `backup_restore_db_test.dart` (3 test):
     - (a) Round-trip ekspor dari database berdata lalu impor ke database kosong menghasilkan seluruh saldo dompet dan ringkasan bulanan yang sama persis.
     - (b) Penolakan berkas cacat di level state & DB tidak mengubah data lama pada semua kasus (JSON rusak, versi asing, walletId tidak ada, nominal bukan integer).
     - (c) Atomisitas transaksi: kegagalan di tengah proses pemulihan (simulasi foreign key failure) di-rollback utuh tanpa menyisakan data setengah jadi.
-  - `backup_restore_widget_test.dart` (4 test): Tampilan menu di Pengaturan, integrasi bagikan berkas `catatan_keuangan_YYYY-MM-DD.json`, penolakan berkas rusak via dialog, serta alur pratinjau ringkasan, pembatalan, dan konfirmasi "Ganti Seluruh Data".
+  - `backup_restore_widget_test.dart` (7 test): Tampilan menu di Pengaturan, integrasi bagikan berkas `catatan_keuangan_YYYY-MM-DD.json` dengan `fileNameOverrides`, penolakan berkas rusak via dialog, alur pratinjau ringkasan dengan tanggal ekspor dari file, pemulihan backup valid dengan nama sembarang (.bin / acak) via `FileType.any`, penolakan file .json sembarang non-backup, dan penolakan berkas di atas 20 MB sebelum dibaca.
   - `migration_test.dart` (1 test): Migrasi skema SQLite v1 ke v2, penambahan kolom `isArchived`, retensi data lama, dan integritas pembaruan.
   - `database_test.dart` (6 test): Seed awal 3 dompet saldo 0, operasi CRUD transaksi & foreign key, integrasi persistence & hitung ulang saldo, serta CRUD dompet & kategori di level repository.
   - `finance_calculator_test.dart` (3 test): Rumus saldo dompet, transfer antar-dompet, ringkasan bulanan, dan filter bulan.
@@ -207,6 +207,8 @@ Dokumen ini berisi spesifikasi kebutuhan minimal (Minimum Viable Product / MVP) 
 ### E. Asumsi & Bug yang Diketahui
 1. **Penyimpanan Permanen Aktif:** Data tersimpan lokal di SQLite perangkat Android (`catatan_keuangan.sqlite`). Data dummy hanya dipakai pada pengujian in-memory.
 2. **Nominal Bulat:** Seluruh nominal uang disimpan dalam integer (`int`) untuk menghindari floating-point rounding error.
-3. **Penyimpanan Tanpa Izin Khusus:** Ekspor dan impor memanfaatkan mekanisme standar OS (Android Share Sheet via `share_plus` dan Storage Access Framework via `file_picker`), sehingga tidak memerlukan izin berbahaya (`WRITE_EXTERNAL_STORAGE` / `READ_EXTERNAL_STORAGE`).
-4. **Isolasi Status Arsip:** Status arsip (`isArchived`) ikut dicadangkan dan dipulihkan sepenuhnya, menjaga konsistensi filter dompet dan kategori di seluruh aplikasi.
-5. **Transaksional Database:** Seluruh operasi restore dibungkus dalam blok `_db.transaction(...)`, menjamin sifat ACID (Atomicity, Consistency, Isolation, Durability) saat pemulihan data.
+3. **Penyimpanan & Berbagi Tanpa Izin Khusus:** Ekspor dan impor memanfaatkan mekanisme standar OS (Android Share Sheet via `share_plus` dan Storage Access Framework via `file_picker`), sehingga tidak memerlukan izin berbahaya (`WRITE_EXTERNAL_STORAGE` / `READ_EXTERNAL_STORAGE`).
+4. **Parameter Nama Berkas Ekspor:** Pengaturan nama berkas `catatan_keuangan_YYYY-MM-DD.json` menggunakan parameter `fileNameOverrides` pada `ShareParams` (`share_plus` 12.0.2) sehingga berkas cache yang dibagikan ke Android dan aplikasi pihak ketiga (seperti WhatsApp) memiliki nama dan MIME `application/json` yang tepat, bukan nama UUID acak atau ekstensi `.bin`.
+5. **Pemulihan Fleksibel & Batasan Ukuran:** Pemilih berkas menggunakan `FileType.any` tanpa pembatasan ekstensi kaku, dengan validasi berbasis isi data JSON dan batasan ukuran maksimal 20 MB untuk keamanan memori.
+6. **Isolasi Status Arsip:** Status arsip (`isArchived`) ikut dicadangkan dan dipulihkan sepenuhnya, menjaga konsistensi filter dompet dan kategori di seluruh aplikasi.
+7. **Transaksional Database:** Seluruh operasi restore dibungkus dalam blok `_db.transaction(...)`, menjamin sifat ACID (Atomicity, Consistency, Isolation, Durability) saat pemulihan data.

@@ -144,8 +144,9 @@ void main() {
       await tester.tap(find.text('Pulihkan data'));
       await tester.pumpAndSettle();
 
-      // Verifikasi dialog ringkasan muncul
+      // Verifikasi dialog ringkasan muncul dengan tanggal ekspor
       expect(find.text('Pulihkan Data?'), findsOneWidget);
+      expect(find.text('06/10/2026 12:00'), findsOneWidget);
       expect(find.text('1 dompet'), findsOneWidget);
       expect(find.text('1 kategori'), findsOneWidget);
       expect(find.text('1 transaksi'), findsOneWidget);
@@ -177,6 +178,107 @@ void main() {
       expect(state.getWalletBalance('w_bank'), 5000000); // initial 2.000.000 + income 3.000.000
 
       expect(find.text('Data berhasil dipulihkan'), findsOneWidget);
+    });
+
+    testWidgets('Isi backup valid dengan nama sembarang (.bin / nama acak) tetap bisa dipulihkan', (tester) async {
+      final validBackupContent = jsonEncode({
+        'formatVersion': 1,
+        'exportedAt': '2026-10-06T15:30:00.000',
+        'wallets': [
+          {'id': 'w_cash', 'name': 'Dompet Saku', 'initialBalance': 150000, 'isArchived': false},
+        ],
+        'categories': [
+          {'id': 'c_snack', 'name': 'Camilan', 'type': 'expense', 'isArchived': false},
+        ],
+        'transactions': [
+          {
+            'id': 'tx_bin_1',
+            'type': 'expense',
+            'amount': 20000,
+            'date': '2026-10-06T14:00:00.000',
+            'walletId': 'w_cash',
+            'categoryId': 'c_snack',
+            'note': 'Kopi',
+          }
+        ],
+      });
+
+      // Menyimulasikan pemilih berkas mengembalikan isi berkas yang berasal dari file bernama '174-11f1-a49a.bin'
+      await tester.pumpWidget(
+        createTestWidget(
+          filePickerOverride: () async => validBackupContent,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Pulihkan data'));
+      await tester.pumpAndSettle();
+
+      // Dialog menampilkan tanggal ekspor dari isi file
+      expect(find.text('Pulihkan Data?'), findsOneWidget);
+      expect(find.text('06/10/2026 15:30'), findsOneWidget);
+      expect(find.text('1 dompet'), findsOneWidget);
+
+      await tester.tap(find.text('Ganti Seluruh Data'));
+      await tester.pumpAndSettle();
+
+      expect(state.wallets.first.name, 'Dompet Saku');
+      expect(state.transactions.first.id, 'tx_bin_1');
+      expect(find.text('Data berhasil dipulihkan'), findsOneWidget);
+    });
+
+    testWidgets('File .json yang isinya bukan backup ditolak tanpa mengubah data', (tester) async {
+      final initialTxCount = state.transactions.length;
+
+      // File .json sembarang (contoh package.json / arbitrary file)
+      final nonBackupJson = jsonEncode({
+        'project': 'my_flutter_app',
+        'version': '1.2.0',
+        'dependencies': {'flutter': 'sdk'},
+      });
+
+      await tester.pumpWidget(
+        createTestWidget(
+          filePickerOverride: () async => nonBackupJson,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Pulihkan data'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Berkas Ditolak'), findsOneWidget);
+      expect(find.textContaining('formatVersion'), findsOneWidget);
+
+      await tester.tap(find.text('Tutup'));
+      await tester.pumpAndSettle();
+
+      expect(state.transactions.length, initialTxCount);
+    });
+
+    testWidgets('File di atas 20 MB ditolak tanpa mengubah data', (tester) async {
+      final initialTxCount = state.transactions.length;
+
+      // String melebihi 20 MB
+      await tester.pumpWidget(
+        createTestWidget(
+          filePickerOverride: () async {
+            throw const FormatException('Ukuran berkas melebihi batas maksimal 20 MB');
+          },
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Pulihkan data'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Gagal Memulihkan Data'), findsOneWidget);
+      expect(find.textContaining('20 MB'), findsOneWidget);
+
+      await tester.tap(find.text('Tutup'));
+      await tester.pumpAndSettle();
+
+      expect(state.transactions.length, initialTxCount);
     });
   });
 }

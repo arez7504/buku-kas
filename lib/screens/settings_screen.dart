@@ -178,6 +178,7 @@ class SettingsScreen extends StatelessWidget {
         await SharePlus.instance.share(
           ShareParams(
             files: [xFile],
+            fileNameOverrides: [fileName],
             subject: fileName,
           ),
         );
@@ -215,9 +216,9 @@ class SettingsScreen extends StatelessWidget {
       return await filePickerOverride!();
     }
 
+    // Menggunakan FileType.any tanpa filter ekstensi/MIME agar file lama (.bin / nama acak) tetap dapat dipilih
     final result = await FilePicker.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['json'],
+      type: FileType.any,
       withData: true,
     );
 
@@ -226,12 +227,26 @@ class SettingsScreen extends StatelessWidget {
     }
 
     final pickedFile = result.files.single;
+
+    // Tolak berkas lebih besar dari 20 MB sebelum membaca isi
+    if (pickedFile.size > BackupService.maxFileSizeBytes) {
+      throw const BackupValidationException(
+        'Ukuran berkas melebihi batas maksimal 20 MB',
+      );
+    }
+
     if (pickedFile.bytes != null) {
       return utf8.decode(pickedFile.bytes!);
     }
     if (pickedFile.path != null) {
       final file = File(pickedFile.path!);
       if (await file.exists()) {
+        final length = await file.length();
+        if (length > BackupService.maxFileSizeBytes) {
+          throw const BackupValidationException(
+            'Ukuran berkas melebihi batas maksimal 20 MB',
+          );
+        }
         return await file.readAsString();
       }
     }
@@ -243,6 +258,13 @@ class SettingsScreen extends StatelessWidget {
       final jsonContent = await _pickFileContent(context);
       if (jsonContent == null) {
         return; // Dibatalkan oleh pengguna
+      }
+
+      // Validasi ukuran isi berkas (maksimal 20 MB)
+      if (utf8.encode(jsonContent).length > BackupService.maxFileSizeBytes) {
+        throw const BackupValidationException(
+          'Ukuran berkas melebihi batas maksimal 20 MB',
+        );
       }
 
       final backupData = BackupService.parseAndValidate(jsonContent);
@@ -273,6 +295,8 @@ class SettingsScreen extends StatelessWidget {
                   ),
                   child: Column(
                     children: [
+                      _buildSummaryRow('Tanggal Ekspor', summary.exportedAtText),
+                      const Divider(height: 12),
                       _buildSummaryRow('Dompet', '${summary.walletCount} dompet'),
                       const Divider(height: 12),
                       _buildSummaryRow('Kategori', '${summary.categoryCount} kategori'),

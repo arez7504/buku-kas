@@ -92,6 +92,8 @@ void main() {
       expect(summary.walletCount, 2);
       expect(summary.categoryCount, 3);
       expect(summary.transactionCount, 3);
+      expect(summary.exportedAt, exportTime);
+      expect(summary.exportedAtText, '06/10/2026 12:00');
       expect(summary.dateRangeText, '01/10/2026 - 03/10/2026');
     });
   });
@@ -333,6 +335,48 @@ void main() {
           (e) => e.message,
           'message',
           contains('tidak ditemukan dalam daftar dompet berkas ini'),
+        )),
+      );
+    });
+
+    test('Menolak file .json yang isinya bukan backup (contoh: arbitrary config JSON)', () {
+      final arbitraryJson = jsonEncode({
+        'name': 'catatan_keuangan',
+        'version': '1.0.0',
+        'description': 'Aplikasi Keuangan',
+        'author': 'User',
+      });
+      expect(
+        () => BackupService.parseAndValidate(arbitraryJson),
+        throwsA(isA<BackupValidationException>().having(
+          (e) => e.message,
+          'message',
+          contains('formatVersion'),
+        )),
+      );
+    });
+
+    test('Menolak ukuran file lebih dari 20 MB via validateFileSize', () {
+      const overLimitBytes = 20 * 1024 * 1024 + 1; // 20 MB + 1 byte
+      expect(
+        () => BackupService.validateFileSize(overLimitBytes),
+        throwsA(isA<BackupValidationException>().having(
+          (e) => e.message,
+          'message',
+          contains('20 MB'),
+        )),
+      );
+    });
+
+    test('Menolak file lebih dari 20 MB via parseAndValidate fileSizeInBytes', () {
+      final payload = createBasePayload();
+      final jsonString = jsonEncode(payload);
+      expect(
+        () => BackupService.parseAndValidate(jsonString, fileSizeInBytes: 21 * 1024 * 1024),
+        throwsA(isA<BackupValidationException>().having(
+          (e) => e.message,
+          'message',
+          contains('20 MB'),
         )),
       );
     });

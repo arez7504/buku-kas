@@ -37,6 +37,7 @@ class BackupSummary {
   final int walletCount;
   final int categoryCount;
   final int transactionCount;
+  final DateTime exportedAt;
   final DateTime? earliestDate;
   final DateTime? latestDate;
 
@@ -44,9 +45,17 @@ class BackupSummary {
     required this.walletCount,
     required this.categoryCount,
     required this.transactionCount,
+    required this.exportedAt,
     this.earliestDate,
     this.latestDate,
   });
+
+  String get exportedAtText {
+    String fmt(DateTime d) =>
+        '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year} '
+        '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
+    return fmt(exportedAt);
+  }
 
   String get dateRangeText {
     if (earliestDate == null || latestDate == null) {
@@ -66,6 +75,17 @@ class BackupSummary {
 /// Layanan murni serialisasi dan validasi data cadangan (tanpa ketergantungan UI atau DB)
 class BackupService {
   static const int currentFormatVersion = 1;
+  static const int maxFileSizeBytes = 20 * 1024 * 1024; // 20 MB
+
+  /// Memvalidasi ukuran berkas dalam byte sebelum proses pembacaan data.
+  /// Menolak berkas yang berukuran lebih dari 20 MB.
+  static void validateFileSize(int sizeInBytes) {
+    if (sizeInBytes > maxFileSizeBytes) {
+      throw const BackupValidationException(
+        'Ukuran berkas melebihi batas maksimal 20 MB',
+      );
+    }
+  }
 
   /// Menghasilkan nama berkas cadangan berformat: catatan_keuangan_YYYY-MM-DD.json
   static String generateBackupFileName([DateTime? date]) {
@@ -122,8 +142,14 @@ class BackupService {
   }
 
   /// Memvalidasi string JSON dan memparsing menjadi BackupData.
-  /// Menolak dengan melempar BackupValidationException jika ada aturan yang dilanggar.
-  static BackupData parseAndValidate(String jsonContent) {
+  /// Menolak dengan melempar BackupValidationException jika ada aturan yang dilanggar atau ukuran > 20 MB.
+  static BackupData parseAndValidate(String jsonContent, {int? fileSizeInBytes}) {
+    if (fileSizeInBytes != null) {
+      validateFileSize(fileSizeInBytes);
+    } else if (jsonContent.length > maxFileSizeBytes) {
+      validateFileSize(jsonContent.length);
+    }
+
     if (jsonContent.trim().isEmpty) {
       throw const BackupValidationException('Berkas cadangan kosong');
     }
@@ -404,6 +430,7 @@ class BackupService {
       walletCount: data.wallets.length,
       categoryCount: data.categories.length,
       transactionCount: data.transactions.length,
+      exportedAt: data.exportedAt,
       earliestDate: earliest,
       latestDate: latest,
     );
