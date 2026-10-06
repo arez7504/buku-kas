@@ -46,7 +46,9 @@ class FinanceState extends ChangeNotifier {
 
   FinanceRepository? get repository => _repository;
   List<Wallet> get wallets => List.unmodifiable(_wallets);
+  List<Wallet> get activeWallets => List.unmodifiable(_wallets.where((w) => !w.isArchived));
   List<Category> get categories => List.unmodifiable(_categories);
+  List<Category> get activeCategories => List.unmodifiable(_categories.where((c) => !c.isArchived));
   List<Transaction> get transactions => List.unmodifiable(_transactions);
   String? get lastSelectedWalletId => _lastSelectedWalletId;
   bool get isLoading => _isLoading;
@@ -101,6 +103,41 @@ class FinanceState extends ChangeNotifier {
       if (categoryId == null || categoryId.trim().isEmpty) {
         return 'Kategori wajib dipilih untuk ${type == TransactionType.income ? "pemasukan" : "pengeluaran"}';
       }
+    }
+    return null;
+  }
+
+  /// Validasi nama dompet: tidak boleh kosong dan tidak boleh kembar (abaikan huruf besar-kecil)
+  String? validateWalletName(String name, {String? excludeWalletId}) {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) {
+      return 'Nama dompet tidak boleh kosong';
+    }
+    final lower = trimmed.toLowerCase();
+    final duplicate = _wallets.any(
+      (w) => w.id != excludeWalletId && w.name.trim().toLowerCase() == lower,
+    );
+    if (duplicate) {
+      return 'Nama dompet sudah digunakan';
+    }
+    return null;
+  }
+
+  /// Validasi nama kategori: tidak boleh kosong dan tidak boleh kembar dalam kelompok yang sama
+  String? validateCategoryName(String name, CategoryType type, {String? excludeCategoryId}) {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) {
+      return 'Nama kategori tidak boleh kosong';
+    }
+    final lower = trimmed.toLowerCase();
+    final duplicate = _categories.any(
+      (c) =>
+          c.type == type &&
+          c.id != excludeCategoryId &&
+          c.name.trim().toLowerCase() == lower,
+    );
+    if (duplicate) {
+      return 'Nama kategori sudah digunakan dalam kelompok ini';
     }
     return null;
   }
@@ -161,6 +198,135 @@ class FinanceState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Menambah dompet baru
+  Future<void> addWallet(Wallet wallet) async {
+    final error = validateWalletName(wallet.name);
+    if (error != null) {
+      throw ArgumentError(error);
+    }
+    if (_repository != null) {
+      await _repository.addWallet(wallet);
+    }
+    _wallets.add(wallet);
+    notifyListeners();
+  }
+
+  /// Mengubah nama dan/atau saldo awal dompet
+  Future<void> updateWallet(Wallet updatedWallet) async {
+    final index = _wallets.indexWhere((w) => w.id == updatedWallet.id);
+    if (index == -1) {
+      throw ArgumentError('Dompet dengan ID ${updatedWallet.id} tidak ditemukan');
+    }
+    final error = validateWalletName(updatedWallet.name, excludeWalletId: updatedWallet.id);
+    if (error != null) {
+      throw ArgumentError(error);
+    }
+    if (_repository != null) {
+      await _repository.updateWallet(updatedWallet);
+    }
+    _wallets[index] = updatedWallet;
+    notifyListeners();
+  }
+
+  /// Mengarsipkan atau mengaktifkan kembali dompet
+  Future<void> archiveWallet(String walletId, {bool isArchived = true}) async {
+    final index = _wallets.indexWhere((w) => w.id == walletId);
+    if (index == -1) {
+      throw ArgumentError('Dompet dengan ID $walletId tidak ditemukan');
+    }
+    final updated = _wallets[index].copyWith(isArchived: isArchived);
+    if (_repository != null) {
+      await _repository.updateWallet(updated);
+    }
+    _wallets[index] = updated;
+    notifyListeners();
+  }
+
+  /// Memeriksa apakah dompet pernah dipakai transaksi
+  bool isWalletUsed(String walletId) {
+    return _transactions.any((t) => t.walletId == walletId || t.targetWalletId == walletId);
+  }
+
+  /// Menghapus dompet secara permanen (hanya jika belum pernah dipakai transaksi)
+  Future<void> deleteWallet(String walletId) async {
+    if (isWalletUsed(walletId)) {
+      throw StateError('Dompet tidak dapat dihapus permanen karena sudah dipakai transaksi');
+    }
+    if (_repository != null) {
+      await _repository.deleteWallet(walletId);
+    }
+    _wallets.removeWhere((w) => w.id == walletId);
+    if (_lastSelectedWalletId == walletId) {
+      _lastSelectedWalletId = null;
+    }
+    notifyListeners();
+  }
+
+  /// Menambah kategori baru
+  Future<void> addCategory(Category category) async {
+    final error = validateCategoryName(category.name, category.type);
+    if (error != null) {
+      throw ArgumentError(error);
+    }
+    if (_repository != null) {
+      await _repository.addCategory(category);
+    }
+    _categories.add(category);
+    notifyListeners();
+  }
+
+  /// Mengubah nama kategori
+  Future<void> updateCategory(Category updatedCategory) async {
+    final index = _categories.indexWhere((c) => c.id == updatedCategory.id);
+    if (index == -1) {
+      throw ArgumentError('Kategori dengan ID ${updatedCategory.id} tidak ditemukan');
+    }
+    final error = validateCategoryName(
+      updatedCategory.name,
+      updatedCategory.type,
+      excludeCategoryId: updatedCategory.id,
+    );
+    if (error != null) {
+      throw ArgumentError(error);
+    }
+    if (_repository != null) {
+      await _repository.updateCategory(updatedCategory);
+    }
+    _categories[index] = updatedCategory;
+    notifyListeners();
+  }
+
+  /// Mengarsipkan atau mengaktifkan kembali kategori
+  Future<void> archiveCategory(String categoryId, {bool isArchived = true}) async {
+    final index = _categories.indexWhere((c) => c.id == categoryId);
+    if (index == -1) {
+      throw ArgumentError('Kategori dengan ID $categoryId tidak ditemukan');
+    }
+    final updated = _categories[index].copyWith(isArchived: isArchived);
+    if (_repository != null) {
+      await _repository.updateCategory(updated);
+    }
+    _categories[index] = updated;
+    notifyListeners();
+  }
+
+  /// Memeriksa apakah kategori pernah dipakai transaksi
+  bool isCategoryUsed(String categoryId) {
+    return _transactions.any((t) => t.categoryId == categoryId);
+  }
+
+  /// Menghapus kategori secara permanen (hanya jika belum pernah dipakai transaksi)
+  Future<void> deleteCategory(String categoryId) async {
+    if (isCategoryUsed(categoryId)) {
+      throw StateError('Kategori tidak dapat dihapus permanen karena sudah dipakai transaksi');
+    }
+    if (_repository != null) {
+      await _repository.deleteCategory(categoryId);
+    }
+    _categories.removeWhere((c) => c.id == categoryId);
+    notifyListeners();
+  }
+
   /// Mengambil saldo terkini untuk seluruh dompet
   Map<String, int> get walletBalances =>
       FinanceCalculator.calculateAllWalletBalances(_wallets, _transactions);
@@ -195,12 +361,14 @@ class FinanceState extends ChangeNotifier {
     return match.isNotEmpty ? match.first.name : 'Tanpa Kategori';
   }
 
-  /// Mengambil daftar kategori yang cocok dengan tipe transaksi
-  List<Category> getCategoriesByType(TransactionType type) {
+  /// Mengambil daftar kategori yang cocok dengan tipe transaksi (opsi penyaringan arsip)
+  List<Category> getCategoriesByType(TransactionType type, {bool includeArchived = false}) {
     if (type == TransactionType.transfer) return [];
     final targetCategoryType =
         type == TransactionType.income ? CategoryType.income : CategoryType.expense;
-    return _categories.where((c) => c.type == targetCategoryType).toList();
+    return _categories
+        .where((c) => c.type == targetCategoryType && (includeArchived || !c.isArchived))
+        .toList();
   }
 }
 

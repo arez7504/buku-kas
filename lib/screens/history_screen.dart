@@ -7,6 +7,7 @@ import '../widgets/buku_kas_day_group.dart';
 import '../widgets/buku_kas_header.dart';
 import '../widgets/buku_kas_hero_summary.dart';
 import '../widgets/buku_kas_wallet_bar.dart';
+import 'settings_screen.dart';
 import 'transaction_form_screen.dart';
 
 // HistoryScreen: Layar utama Buku Kas sesuai design/buku_kas.html dan design/buku_kas.png
@@ -87,7 +88,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
   @override
   Widget build(BuildContext context) {
     final state = FinanceScope.of(context);
-    final wallets = state.wallets;
     final walletBalances = state.walletBalances;
     final summary = state.getMonthlySummary(
       _selectedMonth.year,
@@ -120,19 +120,25 @@ class _HistoryScreenState extends State<HistoryScreen> {
               ],
             ),
 
-            // 1. Header navigasi bulan tanpa AppBar salmon
+            // 1. Header navigasi bulan tanpa AppBar salmon dan tombol Pengaturan
             BukuKasHeader(
               selectedMonth: _selectedMonth,
               onPreviousMonth: _previousMonth,
               onNextMonth: _nextMonth,
+              onSettings: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                );
+              },
             ),
 
             // 2. Ringkasan Pengeluaran (angka besar), Pemasukan, dan Selisih
             BukuKasHeroSummary(summary: summary),
 
-            // 3. Pembagian saldo semua dompet tanpa terpotong
+            // 3. Pembagian saldo semua dompet tanpa terpotong (hanya dompet aktif)
             BukuKasWalletBar(
-              wallets: wallets,
+              wallets: state.activeWallets,
               walletBalances: walletBalances,
             ),
 

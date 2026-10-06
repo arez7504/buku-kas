@@ -24,6 +24,7 @@ class FinanceRepository {
             id: w.id,
             name: w.name,
             initialBalance: w.initialBalance,
+            isArchived: w.isArchived,
           ),
         )
         .toList();
@@ -38,6 +39,7 @@ class FinanceRepository {
             id: c.id,
             name: c.name,
             type: c.type == 'income' ? CategoryType.income : CategoryType.expense,
+            isArchived: c.isArchived,
           ),
         )
         .toList();
@@ -87,26 +89,86 @@ class FinanceRepository {
     await (_db.delete(_db.transactions)..where((t) => t.id.equals(id))).go();
   }
 
-  /// Helper untuk menyisipkan dompet (misalnya saat penyiapan data awal/test)
-  Future<void> insertWallet(Wallet wallet) async {
+  /// Menambah dompet baru ke database
+  Future<void> addWallet(Wallet wallet) async {
     await _db.into(_db.wallets).insert(
           WalletsCompanion.insert(
             id: wallet.id,
             name: wallet.name,
             initialBalance: Value(wallet.initialBalance),
+            isArchived: Value(wallet.isArchived),
           ),
         );
   }
 
-  /// Helper untuk menyisipkan kategori (misalnya saat penyiapan data awal/test)
-  Future<void> insertCategory(Category category) async {
+  /// Memperbarui dompet yang ada di database (nama, saldo awal, atau status arsip)
+  Future<void> updateWallet(Wallet wallet) async {
+    await (_db.update(_db.wallets)..where((w) => w.id.equals(wallet.id))).write(
+          WalletsCompanion(
+            name: Value(wallet.name),
+            initialBalance: Value(wallet.initialBalance),
+            isArchived: Value(wallet.isArchived),
+          ),
+        );
+  }
+
+  /// Menghapus dompet secara permanen dari database
+  Future<void> deleteWallet(String id) async {
+    await (_db.delete(_db.wallets)..where((w) => w.id.equals(id))).go();
+  }
+
+  /// Memeriksa apakah dompet pernah dipakai dalam transaksi apa pun
+  Future<bool> isWalletUsed(String walletId) async {
+    final query = _db.select(_db.transactions)
+      ..where((t) => t.walletId.equals(walletId) | t.targetWalletId.equals(walletId));
+    final rows = await query.get();
+    return rows.isNotEmpty;
+  }
+
+  /// Menambah kategori baru ke database
+  Future<void> addCategory(Category category) async {
     await _db.into(_db.categories).insert(
           CategoriesCompanion.insert(
             id: category.id,
             name: category.name,
             type: category.type == CategoryType.income ? 'income' : 'expense',
+            isArchived: Value(category.isArchived),
           ),
         );
+  }
+
+  /// Memperbarui kategori yang ada di database (nama atau status arsip)
+  Future<void> updateCategory(Category category) async {
+    await (_db.update(_db.categories)..where((c) => c.id.equals(category.id))).write(
+          CategoriesCompanion(
+            name: Value(category.name),
+            type: Value(category.type == CategoryType.income ? 'income' : 'expense'),
+            isArchived: Value(category.isArchived),
+          ),
+        );
+  }
+
+  /// Menghapus kategori secara permanen dari database
+  Future<void> deleteCategory(String id) async {
+    await (_db.delete(_db.categories)..where((c) => c.id.equals(id))).go();
+  }
+
+  /// Memeriksa apakah kategori pernah dipakai dalam transaksi apa pun
+  Future<bool> isCategoryUsed(String categoryId) async {
+    final query = _db.select(_db.transactions)
+      ..where((t) => t.categoryId.equals(categoryId));
+    final rows = await query.get();
+    return rows.isNotEmpty;
+  }
+
+  /// Helper untuk menyisipkan dompet (misalnya saat penyiapan data awal/test)
+  Future<void> insertWallet(Wallet wallet) async {
+    await addWallet(wallet);
+  }
+
+  /// Helper untuk menyisipkan kategori (misalnya saat penyiapan data awal/test)
+  Future<void> insertCategory(Category category) async {
+    await addCategory(category);
   }
 
   /// Menutup koneksi database

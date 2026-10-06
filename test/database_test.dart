@@ -4,6 +4,7 @@ import 'package:catatan_keuangan/data/finance_repository.dart';
 import 'package:catatan_keuangan/logic/finance_state.dart';
 import 'package:catatan_keuangan/models/category.dart';
 import 'package:catatan_keuangan/models/transaction.dart';
+import 'package:catatan_keuangan/models/wallet.dart';
 
 void main() {
   group('Database Local Drift/SQLite Repository Test (Milestone 4)', () {
@@ -206,6 +207,104 @@ void main() {
         () async => await repository.addTransaction(invalidTx),
         throwsA(isA<Exception>()),
       );
+    });
+
+    test('Operasi Dompet di Database: Tambah, Ubah saldo awal, Arsipkan, dan Deteksi Transaksi (Milestone 5)', () async {
+      // 1. Tambah dompet baru
+      final newWallet = const Wallet(
+        id: 'jago',
+        name: 'Bank Jago',
+        initialBalance: 250000,
+        isArchived: false,
+      );
+      await repository.addWallet(newWallet);
+
+      var wallets = await repository.getAllWallets();
+      expect(wallets.any((w) => w.id == 'jago'), isTrue);
+      expect(wallets.firstWhere((w) => w.id == 'jago').initialBalance, equals(250000));
+
+      // 2. Ubah nama dan saldo awal
+      await repository.updateWallet(newWallet.copyWith(name: 'Jago Utama', initialBalance: 1000000));
+      wallets = await repository.getAllWallets();
+      final updated = wallets.firstWhere((w) => w.id == 'jago');
+      expect(updated.name, equals('Jago Utama'));
+      expect(updated.initialBalance, equals(1000000));
+
+      // 3. Deteksi isWalletUsed: sebelum transaksi -> false
+      expect(await repository.isWalletUsed('jago'), isFalse);
+
+      // Tambah transaksi yang memakai dompet jago
+      await repository.addTransaction(
+        Transaction(
+          id: 'tx_jago_1',
+          type: TransactionType.income,
+          amount: 500000,
+          date: DateTime(2026, 10, 5),
+          walletId: 'jago',
+          categoryId: 'inc_gaji',
+        ),
+      );
+
+      // Setelah transaksi -> true
+      expect(await repository.isWalletUsed('jago'), isTrue);
+
+      // 4. Arsipkan dompet
+      await repository.updateWallet(updated.copyWith(isArchived: true));
+      wallets = await repository.getAllWallets();
+      expect(wallets.firstWhere((w) => w.id == 'jago').isArchived, isTrue);
+
+      // 5. Hapus transaksi lalu hapus dompet secara permanen
+      await repository.deleteTransaction('tx_jago_1');
+      expect(await repository.isWalletUsed('jago'), isFalse);
+      await repository.deleteWallet('jago');
+      wallets = await repository.getAllWallets();
+      expect(wallets.any((w) => w.id == 'jago'), isFalse);
+    });
+
+    test('Operasi Kategori di Database: Tambah, Ubah nama, Arsipkan, dan Deteksi Transaksi (Milestone 5)', () async {
+      // 1. Tambah kategori baru
+      final newCat = const Category(
+        id: 'exp_investasi',
+        name: 'Investasi',
+        type: CategoryType.expense,
+        isArchived: false,
+      );
+      await repository.addCategory(newCat);
+
+      var categories = await repository.getAllCategories();
+      expect(categories.any((c) => c.id == 'exp_investasi'), isTrue);
+
+      // 2. Ubah nama
+      await repository.updateCategory(newCat.copyWith(name: 'Reksadana'));
+      categories = await repository.getAllCategories();
+      expect(categories.firstWhere((c) => c.id == 'exp_investasi').name, equals('Reksadana'));
+
+      // 3. Deteksi isCategoryUsed
+      expect(await repository.isCategoryUsed('exp_investasi'), isFalse);
+
+      await repository.addTransaction(
+        Transaction(
+          id: 'tx_inv_1',
+          type: TransactionType.expense,
+          amount: 200000,
+          date: DateTime(2026, 10, 6),
+          walletId: 'tunai',
+          categoryId: 'exp_investasi',
+        ),
+      );
+      expect(await repository.isCategoryUsed('exp_investasi'), isTrue);
+
+      // 4. Arsipkan
+      await repository.updateCategory(newCat.copyWith(name: 'Reksadana', isArchived: true));
+      categories = await repository.getAllCategories();
+      expect(categories.firstWhere((c) => c.id == 'exp_investasi').isArchived, isTrue);
+
+      // 5. Hapus transaksi dan hapus kategori
+      await repository.deleteTransaction('tx_inv_1');
+      expect(await repository.isCategoryUsed('exp_investasi'), isFalse);
+      await repository.deleteCategory('exp_investasi');
+      categories = await repository.getAllCategories();
+      expect(categories.any((c) => c.id == 'exp_investasi'), isFalse);
     });
   });
 }

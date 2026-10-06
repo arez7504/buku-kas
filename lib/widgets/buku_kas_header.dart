@@ -7,19 +7,21 @@ class BukuKasHeader extends StatelessWidget {
   final DateTime selectedMonth;
   final VoidCallback onPreviousMonth;
   final VoidCallback onNextMonth;
+  final VoidCallback? onSettings;
 
   const BukuKasHeader({
     super.key,
     required this.selectedMonth,
     required this.onPreviousMonth,
     required this.onNextMonth,
+    this.onSettings,
   });
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Bar atas: Judul editorial Buku Kas
+        // Bar atas: Judul editorial Buku Kas dan ikon gerigi Pengaturan
         Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(
@@ -27,8 +29,18 @@ class BukuKasHeader extends StatelessWidget {
             vertical: AppDimens.spaceSm,
           ),
           color: AppColors.surface,
-          alignment: Alignment.centerLeft,
-          child: const Text('Buku Kas', style: AppTypography.headlineSmItalic),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Buku Kas', style: AppTypography.headlineSmItalic),
+              IconButton(
+                key: const Key('settings_button'),
+                icon: const Icon(Icons.settings, size: AppDimens.iconMedium),
+                onPressed: onSettings,
+                tooltip: 'Pengaturan',
+              ),
+            ],
+          ),
         ),
 
         // Bar pemilih bulan (panah kiri, bulan & tahun, panah kanan)

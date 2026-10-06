@@ -53,29 +53,34 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     final state = FinanceScope.of(context);
+    final activeWallets = state.activeWallets;
 
-    if (_selectedWalletId == null) {
-      if (_isEditing) {
+    if (_selectedWalletId == null || !activeWallets.any((w) => w.id == _selectedWalletId)) {
+      if (_isEditing && activeWallets.any((w) => w.id == widget.transaction!.walletId)) {
         _selectedWalletId = widget.transaction!.walletId;
       } else {
-        _selectedWalletId = state.lastSelectedWalletId ??
-            (state.wallets.isNotEmpty ? state.wallets.first.id : null);
+        _selectedWalletId = (state.lastSelectedWalletId != null &&
+                activeWallets.any((w) => w.id == state.lastSelectedWalletId))
+            ? state.lastSelectedWalletId
+            : (activeWallets.isNotEmpty ? activeWallets.first.id : null);
       }
     }
 
-    if (_selectedType == TransactionType.transfer && _selectedTargetWalletId == null) {
-      if (_isEditing) {
+    if (_selectedType == TransactionType.transfer &&
+        (_selectedTargetWalletId == null || !activeWallets.any((w) => w.id == _selectedTargetWalletId))) {
+      if (_isEditing && activeWallets.any((w) => w.id == widget.transaction!.targetWalletId)) {
         _selectedTargetWalletId = widget.transaction!.targetWalletId;
       } else {
-        final otherWallet = state.wallets.where((w) => w.id != _selectedWalletId);
+        final otherWallet = activeWallets.where((w) => w.id != _selectedWalletId);
         _selectedTargetWalletId = otherWallet.isNotEmpty
             ? otherWallet.first.id
-            : (state.wallets.length > 1 ? state.wallets[1].id : null);
+            : (activeWallets.length > 1 ? activeWallets[1].id : null);
       }
     }
 
-    if (_selectedType != TransactionType.transfer && _selectedCategoryId == null) {
-      final availableCategories = state.getCategoriesByType(_selectedType);
+    if (_selectedType != TransactionType.transfer &&
+        (_selectedCategoryId == null || !state.activeCategories.any((c) => c.id == _selectedCategoryId))) {
+      final availableCategories = state.getCategoriesByType(_selectedType, includeArchived: false);
       if (availableCategories.isNotEmpty) {
         _selectedCategoryId = availableCategories.first.id;
       }
@@ -295,8 +300,8 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
   @override
   Widget build(BuildContext context) {
     final state = FinanceScope.of(context);
-    final wallets = state.wallets;
-    final availableCategories = state.getCategoriesByType(_selectedType);
+    final wallets = state.activeWallets;
+    final availableCategories = state.getCategoriesByType(_selectedType, includeArchived: false);
 
     return Scaffold(
       backgroundColor: AppColors.surface,

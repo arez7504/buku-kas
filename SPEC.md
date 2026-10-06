@@ -149,12 +149,17 @@ Dokumen ini berisi spesifikasi kebutuhan minimal (Minimum Viable Product / MVP) 
    - Pembacaan data asinkron via `FinanceState.loadData()` dengan penanganan state `isLoading`.
    - Unit test database in-memory mencakup seluruh operasi CRUD, integritas foreign key, persistence, dan penghitungan ulang saldo.
 
+7. **Milestone 5 (Kelola Dompet dan Kategori):**
+   - Layar Pengaturan diakses via ikon gerigi pada header Buku Kas, menyediakan dua menu: Kelola Dompet dan Kelola Kategori.
+   - Layar Kelola Dompet: Menampilkan seluruh dompet beserta saldo sekarang, tambah dompet baru (nama & saldo awal), ubah nama dan saldo awal (otomatis menghitung ulang semua saldo), dan pengarsipan.
+   - Layar Kelola Kategori: Menampilkan kategori yang dikelompokkan berdasarkan tipe (Pengeluaran / Pemasukan), tambah kategori (nama & tipe), ubah nama, dan pengarsipan.
+   - Penghapusan bersyarat: Hapus permanen hanya diizinkan untuk dompet/kategori yang belum memiliki transaksi. Jika sudah pernah dipakai, sistem menampilkan dialog peringatan dan menawarkan opsi pengarsipan.
+   - Penyaringan arsip: Dompet dan kategori yang diarsipkan otomatis disembunyikan dari pilihan pada form Catat Transaksi, namun riwayat transaksi lama tetap menampilkan nama dompet dan kategori terkait secara normal.
+   - Validasi input: Nama dompet dan kategori tidak boleh kosong dan tidak boleh kembar (case-insensitive) dalam kelompok yang sama.
+   - Migrasi SQLite: Kolom `isArchived` (boolean, default false) ditambahkan pada tabel `Wallets` dan `Categories`. Versi skema dinaikkan ke `schemaVersion = 2` dengan strategi `onUpgrade` otomatis yang melindungi dan mempertahankan seluruh data lama (diverifikasi dengan automated migration test).
+
 ### B. Hal yang Belum Dikerjakan
-1. **Layar Kelola Dompet Mandiri (Bagian 3.3):**
-   - Daftar dompet dan dialog penambahan dompet baru (nama & saldo awal).
-2. **Layar Kelola Kategori Mandiri (Bagian 3.4):**
-   - Daftar kategori dan dialog penambahan kategori baru (nama & tipe).
-3. **Rincian Pengeluaran per Kategori:**
+1. **Rincian Pengeluaran per Kategori:**
    - Visualisasi atau laporan distribusi pengeluaran per kategori (Tahap 2).
 
 ### C. Daftar Package (`pubspec.yaml`)
@@ -168,16 +173,19 @@ Dokumen ini berisi spesifikasi kebutuhan minimal (Minimum Viable Product / MVP) 
 - `build_runner: ^2.15.1` (runner generator Dart - dev dependency)
 
 ### D. Hasil `flutter test` Terakhir
-- **Total Test:** 15
-- **Lulus:** 15 (100%)
+- **Total Test:** 30
+- **Lulus:** 30 (100%)
 - **Gagal:** 0
 - **Cakupan Pengujian:**
-  - `database_test.dart` (4 test): Seed awal 3 dompet saldo 0 tanpa transaksi, operasi CRUD transaksi, integrasi persistence & hitung ulang saldo, dan foreign key constraints.
+  - `migration_test.dart` (1 test): Migrasi skema SQLite v1 ke v2, penambahan kolom `isArchived`, retensi data lama, dan integritas pembaruan.
+  - `database_test.dart` (6 test): Seed awal 3 dompet saldo 0, operasi CRUD transaksi & foreign key, integrasi persistence & hitung ulang saldo, serta CRUD dompet & kategori di level repository.
   - `finance_calculator_test.dart` (3 test): Rumus saldo dompet, transfer antar-dompet, ringkasan bulanan, dan filter bulan.
-  - `finance_state_test.dart` (6 test): Tambah pengeluaran, transfer, edit nominal, hapus transaksi, validasi input, dan memori dompet terakhir.
+  - `finance_state_test.dart` (13 test): Operasi transaksi, memori dompet terakhir, hitung ulang saldo saat ubah saldo awal, validasi nama kembar/kosong, pencegahan hapus dompet/kategori berelasi transaksi, dan isolasi dompet/kategori arsip.
+  - `milestone_5_widget_test.dart` (5 test): Alur UI lengkap dari header Buku Kas ke Pengaturan, ubah saldo awal BCA dan dampaknya di Buku Kas, validasi form dompet, pencegahan hapus permanen & tawaran arsip, serta penyembunyian item arsip di form Catat Transaksi.
   - `widget_test.dart` (2 test): Smoke test layar utama Buku Kas dan pembukaan layar form Catat Transaksi via tombol Catat.
 
 ### E. Asumsi & Bug yang Diketahui
 1. **Penyimpanan Permanen Aktif:** Data tersimpan lokal di SQLite perangkat Android (`catatan_keuangan.sqlite`). Data dummy hanya dipakai pada pengujian in-memory.
 2. **Nominal Bulat:** Keypad custom sengaja tidak menyediakan koma/desimal karena mata uang Rupiah disepakati disimpan dalam integer (`int`).
 3. **Judul Transaksi:** Transaksi tanpa catatan otomatis menampilkan nama kategori sebagai judul baris riwayat.
+4. **Isolasi Status Arsip:** Item dompet dan kategori yang diarsipkan tetap dipertahankan di database demi menjaga integritas historis transaksi masa lalu, namun disaring keluar dari opsi input formulir baru.

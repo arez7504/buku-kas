@@ -188,4 +188,175 @@ void main() {
       expect(state.lastSelectedWalletId, equals('tunai'));
     });
   });
+
+  group('Kelola Dompet dan Kategori (Milestone 5)', () {
+    late FinanceState state;
+    const bca = Wallet(id: 'bca', name: 'BCA', initialBalance: 0);
+    const tunai = Wallet(id: 'tunai', name: 'Tunai', initialBalance: 200000);
+    const katMakan = Category(id: 'c_makan', name: 'Makanan', type: CategoryType.expense);
+    const katGaji = Category(id: 'c_gaji', name: 'Gaji', type: CategoryType.income);
+
+    setUp(() {
+      state = FinanceState(
+        initialWallets: [bca, tunai],
+        initialCategories: [katMakan, katGaji],
+        initialTransactions: [],
+      );
+    });
+
+    test('(b) Ubah saldo awal BCA jadi 1.000.000: saldo BCA berubah dan menghitung ulang seluruh saldo', () async {
+      expect(state.getWalletBalance('bca'), equals(0));
+
+      // Ada transaksi pengeluaran 150.000 di BCA
+      await state.addTransaction(
+        Transaction(
+          id: 'tx_bca_1',
+          type: TransactionType.expense,
+          amount: 150000,
+          date: DateTime(2026, 10, 1),
+          walletId: 'bca',
+          categoryId: 'c_makan',
+        ),
+      );
+      expect(state.getWalletBalance('bca'), equals(-150000));
+
+      // Ubah saldo awal BCA menjadi 1.000.000
+      final updatedBca = bca.copyWith(initialBalance: 1000000);
+      await state.updateWallet(updatedBca);
+
+      // Saldo sekarang BCA otomatis terhitung ulang: 1.000.000 - 150.000 = 850.000
+      expect(state.getWalletBalance('bca'), equals(850000));
+      expect(state.walletBalances['bca'], equals(850000));
+    });
+
+    test('(c) Dompet yang punya transaksi tidak bisa dihapus permanen, tapi bisa diarsipkan; riwayat lamanya tetap tampil', () async {
+      await state.addTransaction(
+        Transaction(
+          id: 'tx_tunai_1',
+          type: TransactionType.expense,
+          amount: 50000,
+          date: DateTime(2026, 10, 2),
+          walletId: 'tunai',
+          categoryId: 'c_makan',
+        ),
+      );
+
+      // Coba hapus dompet 'tunai' yang memiliki transaksi -> harus gagal
+      expect(state.isWalletUsed('tunai'), isTrue);
+      expect(
+        () async => await state.deleteWallet('tunai'),
+        throwsA(isA<StateError>()),
+      );
+
+      // Arsipkan dompet 'tunai'
+      await state.archiveWallet('tunai', isArchived: true);
+      expect(state.wallets.firstWhere((w) => w.id == 'tunai').isArchived, isTrue);
+
+      // Riwayat lamanya tetap menampilkan nama dompet
+      expect(state.getWalletName('tunai'), equals('Tunai'));
+      expect(state.transactions.length, equals(1));
+    });
+
+    test('(d) Dompet yang diarsipkan hilang dari activeWallets (form Catat)', () async {
+      expect(state.activeWallets.map((w) => w.id), containsAll(['bca', 'tunai']));
+
+      // Arsipkan BCA
+      await state.archiveWallet('bca', isArchived: true);
+
+      // BCA hilang dari daftar dompet aktif
+      expect(state.activeWallets.map((w) => w.id), isNot(contains('bca')));
+      expect(state.activeWallets.map((w) => w.id), contains('tunai'));
+
+      // Tetapi tetap ada di daftar total dompet
+      expect(state.wallets.map((w) => w.id), contains('bca'));
+    });
+
+    test('(e) Nama dompet kembar dan nama kosong ditolak', () {
+      // Nama kosong
+      expect(state.validateWalletName(''), isNotNull);
+      expect(state.validateWalletName('   '), isNotNull);
+
+      // Nama kembar (case-insensitive)
+      expect(state.validateWalletName('bca'), isNotNull);
+      expect(state.validateWalletName('BCA'), isNotNull);
+      expect(state.validateWalletName('  Bca  '), isNotNull);
+      expect(state.validateWalletName('tunai'), isNotNull);
+
+      // Nama baru yang belum ada -> valid
+      expect(state.validateWalletName('Mandiri'), isNull);
+
+      // Mengubah dompet dengan nama yang sama miliknya sendiri -> valid
+      expect(state.validateWalletName('BCA', excludeWalletId: 'bca'), isNull);
+    });
+
+    test('(e) Nama kategori kembar dalam kelompok yang sama dan nama kosong ditolak', () {
+      // Nama kosong
+      expect(state.validateCategoryName('', CategoryType.expense), isNotNull);
+      expect(state.validateCategoryName('   ', CategoryType.expense), isNotNull);
+
+      // Nama kembar di tipe yang sama (case-insensitive)
+      expect(state.validateCategoryName('makanan', CategoryType.expense), isNotNull);
+      expect(state.validateCategoryName('MAKANAN', CategoryType.expense), isNotNull);
+      expect(state.validateCategoryName('  Makanan  ', CategoryType.expense), isNotNull);
+
+      // Nama sama tapi di tipe berbeda diperbolehkan (misal 'Lainnya' di pengeluaran dan pemasukan)
+      expect(state.validateCategoryName('Makanan', CategoryType.income), isNull);
+
+      // Mengubah kategori dengan nama yang sama miliknya sendiri -> valid
+      expect(state.validateCategoryName('Makanan', CategoryType.expense, excludeCategoryId: 'c_makan'), isNull);
+    });
+
+    test('Kategori dengan transaksi tidak bisa dihapus permanen, tapi bisa diarsipkan', () async {
+      await state.addTransaction(
+        Transaction(
+          id: 'tx_kat_1',
+          type: TransactionType.expense,
+          amount: 25000,
+          date: DateTime(2026, 10, 3),
+          walletId: 'tunai',
+          categoryId: 'c_makan',
+        ),
+      );
+
+      expect(state.isCategoryUsed('c_makan'), isTrue);
+      expect(
+        () async => await state.deleteCategory('c_makan'),
+        throwsA(isA<StateError>()),
+      );
+
+      // Arsipkan kategori
+      await state.archiveCategory('c_makan', isArchived: true);
+      expect(state.categories.firstWhere((c) => c.id == 'c_makan').isArchived, isTrue);
+
+      // Kategori yang diarsipkan hilang dari activeCategories dan getCategoriesByType tanpa arsip
+      expect(state.activeCategories.map((c) => c.id), isNot(contains('c_makan')));
+      expect(
+        state.getCategoriesByType(TransactionType.expense, includeArchived: false).map((c) => c.id),
+        isNot(contains('c_makan')),
+      );
+
+      // Riwayat lamanya tetap menampilkan nama kategori
+      expect(state.getCategoryName('c_makan'), equals('Makanan'));
+    });
+
+    test('Dompet dan kategori tanpa transaksi dapat dihapus permanen', () async {
+      // Tambah dompet baru tanpa transaksi
+      final newWallet = const Wallet(id: 'w_test', name: 'Dompet Baru', initialBalance: 50000);
+      await state.addWallet(newWallet);
+      expect(state.wallets.any((w) => w.id == 'w_test'), isTrue);
+
+      // Hapus permanen
+      await state.deleteWallet('w_test');
+      expect(state.wallets.any((w) => w.id == 'w_test'), isFalse);
+
+      // Tambah kategori baru tanpa transaksi
+      final newCat = const Category(id: 'c_test', name: 'Bonus Tahunan', type: CategoryType.income);
+      await state.addCategory(newCat);
+      expect(state.categories.any((c) => c.id == 'c_test'), isTrue);
+
+      // Hapus permanen
+      await state.deleteCategory('c_test');
+      expect(state.categories.any((c) => c.id == 'c_test'), isFalse);
+    });
+  });
 }

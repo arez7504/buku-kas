@@ -38,8 +38,23 @@ class $WalletsTable extends Wallets with TableInfo<$WalletsTable, DbWallet> {
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
+  static const VerificationMeta _isArchivedMeta = const VerificationMeta(
+    'isArchived',
+  );
   @override
-  List<GeneratedColumn> get $columns => [id, name, initialBalance];
+  late final GeneratedColumn<bool> isArchived = GeneratedColumn<bool>(
+    'is_archived',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_archived" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, name, initialBalance, isArchived];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -74,6 +89,12 @@ class $WalletsTable extends Wallets with TableInfo<$WalletsTable, DbWallet> {
         ),
       );
     }
+    if (data.containsKey('is_archived')) {
+      context.handle(
+        _isArchivedMeta,
+        isArchived.isAcceptableOrUnknown(data['is_archived']!, _isArchivedMeta),
+      );
+    }
     return context;
   }
 
@@ -95,6 +116,10 @@ class $WalletsTable extends Wallets with TableInfo<$WalletsTable, DbWallet> {
         DriftSqlType.int,
         data['${effectivePrefix}initial_balance'],
       )!,
+      isArchived: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_archived'],
+      )!,
     );
   }
 
@@ -108,10 +133,12 @@ class DbWallet extends DataClass implements Insertable<DbWallet> {
   final String id;
   final String name;
   final int initialBalance;
+  final bool isArchived;
   const DbWallet({
     required this.id,
     required this.name,
     required this.initialBalance,
+    required this.isArchived,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -119,6 +146,7 @@ class DbWallet extends DataClass implements Insertable<DbWallet> {
     map['id'] = Variable<String>(id);
     map['name'] = Variable<String>(name);
     map['initial_balance'] = Variable<int>(initialBalance);
+    map['is_archived'] = Variable<bool>(isArchived);
     return map;
   }
 
@@ -127,6 +155,7 @@ class DbWallet extends DataClass implements Insertable<DbWallet> {
       id: Value(id),
       name: Value(name),
       initialBalance: Value(initialBalance),
+      isArchived: Value(isArchived),
     );
   }
 
@@ -139,6 +168,7 @@ class DbWallet extends DataClass implements Insertable<DbWallet> {
       id: serializer.fromJson<String>(json['id']),
       name: serializer.fromJson<String>(json['name']),
       initialBalance: serializer.fromJson<int>(json['initialBalance']),
+      isArchived: serializer.fromJson<bool>(json['isArchived']),
     );
   }
   @override
@@ -148,15 +178,21 @@ class DbWallet extends DataClass implements Insertable<DbWallet> {
       'id': serializer.toJson<String>(id),
       'name': serializer.toJson<String>(name),
       'initialBalance': serializer.toJson<int>(initialBalance),
+      'isArchived': serializer.toJson<bool>(isArchived),
     };
   }
 
-  DbWallet copyWith({String? id, String? name, int? initialBalance}) =>
-      DbWallet(
-        id: id ?? this.id,
-        name: name ?? this.name,
-        initialBalance: initialBalance ?? this.initialBalance,
-      );
+  DbWallet copyWith({
+    String? id,
+    String? name,
+    int? initialBalance,
+    bool? isArchived,
+  }) => DbWallet(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    initialBalance: initialBalance ?? this.initialBalance,
+    isArchived: isArchived ?? this.isArchived,
+  );
   DbWallet copyWithCompanion(WalletsCompanion data) {
     return DbWallet(
       id: data.id.present ? data.id.value : this.id,
@@ -164,6 +200,9 @@ class DbWallet extends DataClass implements Insertable<DbWallet> {
       initialBalance: data.initialBalance.present
           ? data.initialBalance.value
           : this.initialBalance,
+      isArchived: data.isArchived.present
+          ? data.isArchived.value
+          : this.isArchived,
     );
   }
 
@@ -172,37 +211,42 @@ class DbWallet extends DataClass implements Insertable<DbWallet> {
     return (StringBuffer('DbWallet(')
           ..write('id: $id, ')
           ..write('name: $name, ')
-          ..write('initialBalance: $initialBalance')
+          ..write('initialBalance: $initialBalance, ')
+          ..write('isArchived: $isArchived')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, name, initialBalance);
+  int get hashCode => Object.hash(id, name, initialBalance, isArchived);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is DbWallet &&
           other.id == this.id &&
           other.name == this.name &&
-          other.initialBalance == this.initialBalance);
+          other.initialBalance == this.initialBalance &&
+          other.isArchived == this.isArchived);
 }
 
 class WalletsCompanion extends UpdateCompanion<DbWallet> {
   final Value<String> id;
   final Value<String> name;
   final Value<int> initialBalance;
+  final Value<bool> isArchived;
   final Value<int> rowid;
   const WalletsCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
     this.initialBalance = const Value.absent(),
+    this.isArchived = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   WalletsCompanion.insert({
     required String id,
     required String name,
     this.initialBalance = const Value.absent(),
+    this.isArchived = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        name = Value(name);
@@ -210,12 +254,14 @@ class WalletsCompanion extends UpdateCompanion<DbWallet> {
     Expression<String>? id,
     Expression<String>? name,
     Expression<int>? initialBalance,
+    Expression<bool>? isArchived,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (name != null) 'name': name,
       if (initialBalance != null) 'initial_balance': initialBalance,
+      if (isArchived != null) 'is_archived': isArchived,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -224,12 +270,14 @@ class WalletsCompanion extends UpdateCompanion<DbWallet> {
     Value<String>? id,
     Value<String>? name,
     Value<int>? initialBalance,
+    Value<bool>? isArchived,
     Value<int>? rowid,
   }) {
     return WalletsCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
       initialBalance: initialBalance ?? this.initialBalance,
+      isArchived: isArchived ?? this.isArchived,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -246,6 +294,9 @@ class WalletsCompanion extends UpdateCompanion<DbWallet> {
     if (initialBalance.present) {
       map['initial_balance'] = Variable<int>(initialBalance.value);
     }
+    if (isArchived.present) {
+      map['is_archived'] = Variable<bool>(isArchived.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -258,6 +309,7 @@ class WalletsCompanion extends UpdateCompanion<DbWallet> {
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('initialBalance: $initialBalance, ')
+          ..write('isArchived: $isArchived, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -297,8 +349,23 @@ class $CategoriesTable extends Categories
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _isArchivedMeta = const VerificationMeta(
+    'isArchived',
+  );
   @override
-  List<GeneratedColumn> get $columns => [id, name, type];
+  late final GeneratedColumn<bool> isArchived = GeneratedColumn<bool>(
+    'is_archived',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_archived" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, name, type, isArchived];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -332,6 +399,12 @@ class $CategoriesTable extends Categories
     } else if (isInserting) {
       context.missing(_typeMeta);
     }
+    if (data.containsKey('is_archived')) {
+      context.handle(
+        _isArchivedMeta,
+        isArchived.isAcceptableOrUnknown(data['is_archived']!, _isArchivedMeta),
+      );
+    }
     return context;
   }
 
@@ -353,6 +426,10 @@ class $CategoriesTable extends Categories
         DriftSqlType.string,
         data['${effectivePrefix}type'],
       )!,
+      isArchived: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_archived'],
+      )!,
     );
   }
 
@@ -366,13 +443,20 @@ class DbCategory extends DataClass implements Insertable<DbCategory> {
   final String id;
   final String name;
   final String type;
-  const DbCategory({required this.id, required this.name, required this.type});
+  final bool isArchived;
+  const DbCategory({
+    required this.id,
+    required this.name,
+    required this.type,
+    required this.isArchived,
+  });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
     map['name'] = Variable<String>(name);
     map['type'] = Variable<String>(type);
+    map['is_archived'] = Variable<bool>(isArchived);
     return map;
   }
 
@@ -381,6 +465,7 @@ class DbCategory extends DataClass implements Insertable<DbCategory> {
       id: Value(id),
       name: Value(name),
       type: Value(type),
+      isArchived: Value(isArchived),
     );
   }
 
@@ -393,6 +478,7 @@ class DbCategory extends DataClass implements Insertable<DbCategory> {
       id: serializer.fromJson<String>(json['id']),
       name: serializer.fromJson<String>(json['name']),
       type: serializer.fromJson<String>(json['type']),
+      isArchived: serializer.fromJson<bool>(json['isArchived']),
     );
   }
   @override
@@ -402,19 +488,29 @@ class DbCategory extends DataClass implements Insertable<DbCategory> {
       'id': serializer.toJson<String>(id),
       'name': serializer.toJson<String>(name),
       'type': serializer.toJson<String>(type),
+      'isArchived': serializer.toJson<bool>(isArchived),
     };
   }
 
-  DbCategory copyWith({String? id, String? name, String? type}) => DbCategory(
+  DbCategory copyWith({
+    String? id,
+    String? name,
+    String? type,
+    bool? isArchived,
+  }) => DbCategory(
     id: id ?? this.id,
     name: name ?? this.name,
     type: type ?? this.type,
+    isArchived: isArchived ?? this.isArchived,
   );
   DbCategory copyWithCompanion(CategoriesCompanion data) {
     return DbCategory(
       id: data.id.present ? data.id.value : this.id,
       name: data.name.present ? data.name.value : this.name,
       type: data.type.present ? data.type.value : this.type,
+      isArchived: data.isArchived.present
+          ? data.isArchived.value
+          : this.isArchived,
     );
   }
 
@@ -423,37 +519,42 @@ class DbCategory extends DataClass implements Insertable<DbCategory> {
     return (StringBuffer('DbCategory(')
           ..write('id: $id, ')
           ..write('name: $name, ')
-          ..write('type: $type')
+          ..write('type: $type, ')
+          ..write('isArchived: $isArchived')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, name, type);
+  int get hashCode => Object.hash(id, name, type, isArchived);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is DbCategory &&
           other.id == this.id &&
           other.name == this.name &&
-          other.type == this.type);
+          other.type == this.type &&
+          other.isArchived == this.isArchived);
 }
 
 class CategoriesCompanion extends UpdateCompanion<DbCategory> {
   final Value<String> id;
   final Value<String> name;
   final Value<String> type;
+  final Value<bool> isArchived;
   final Value<int> rowid;
   const CategoriesCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
     this.type = const Value.absent(),
+    this.isArchived = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   CategoriesCompanion.insert({
     required String id,
     required String name,
     required String type,
+    this.isArchived = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        name = Value(name),
@@ -462,12 +563,14 @@ class CategoriesCompanion extends UpdateCompanion<DbCategory> {
     Expression<String>? id,
     Expression<String>? name,
     Expression<String>? type,
+    Expression<bool>? isArchived,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (name != null) 'name': name,
       if (type != null) 'type': type,
+      if (isArchived != null) 'is_archived': isArchived,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -476,12 +579,14 @@ class CategoriesCompanion extends UpdateCompanion<DbCategory> {
     Value<String>? id,
     Value<String>? name,
     Value<String>? type,
+    Value<bool>? isArchived,
     Value<int>? rowid,
   }) {
     return CategoriesCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
       type: type ?? this.type,
+      isArchived: isArchived ?? this.isArchived,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -498,6 +603,9 @@ class CategoriesCompanion extends UpdateCompanion<DbCategory> {
     if (type.present) {
       map['type'] = Variable<String>(type.value);
     }
+    if (isArchived.present) {
+      map['is_archived'] = Variable<bool>(isArchived.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -510,6 +618,7 @@ class CategoriesCompanion extends UpdateCompanion<DbCategory> {
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('type: $type, ')
+          ..write('isArchived: $isArchived, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -1061,6 +1170,7 @@ typedef $$WalletsTableCreateCompanionBuilder =
       required String id,
       required String name,
       Value<int> initialBalance,
+      Value<bool> isArchived,
       Value<int> rowid,
     });
 typedef $$WalletsTableUpdateCompanionBuilder =
@@ -1068,6 +1178,7 @@ typedef $$WalletsTableUpdateCompanionBuilder =
       Value<String> id,
       Value<String> name,
       Value<int> initialBalance,
+      Value<bool> isArchived,
       Value<int> rowid,
     });
 
@@ -1136,6 +1247,11 @@ class $$WalletsTableFilterComposer
 
   ColumnFilters<int> get initialBalance => $composableBuilder(
     column: $table.initialBalance,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isArchived => $composableBuilder(
+    column: $table.isArchived,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -1213,6 +1329,11 @@ class $$WalletsTableOrderingComposer
     column: $table.initialBalance,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get isArchived => $composableBuilder(
+    column: $table.isArchived,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$WalletsTableAnnotationComposer
@@ -1232,6 +1353,11 @@ class $$WalletsTableAnnotationComposer
 
   GeneratedColumn<int> get initialBalance => $composableBuilder(
     column: $table.initialBalance,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get isArchived => $composableBuilder(
+    column: $table.isArchived,
     builder: (column) => column,
   );
 
@@ -1320,11 +1446,13 @@ class $$WalletsTableTableManager
                 Value<String> id = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<int> initialBalance = const Value.absent(),
+                Value<bool> isArchived = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => WalletsCompanion(
                 id: id,
                 name: name,
                 initialBalance: initialBalance,
+                isArchived: isArchived,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -1332,11 +1460,13 @@ class $$WalletsTableTableManager
                 required String id,
                 required String name,
                 Value<int> initialBalance = const Value.absent(),
+                Value<bool> isArchived = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => WalletsCompanion.insert(
                 id: id,
                 name: name,
                 initialBalance: initialBalance,
+                isArchived: isArchived,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -1427,6 +1557,7 @@ typedef $$CategoriesTableCreateCompanionBuilder =
       required String id,
       required String name,
       required String type,
+      Value<bool> isArchived,
       Value<int> rowid,
     });
 typedef $$CategoriesTableUpdateCompanionBuilder =
@@ -1434,6 +1565,7 @@ typedef $$CategoriesTableUpdateCompanionBuilder =
       Value<String> id,
       Value<String> name,
       Value<String> type,
+      Value<bool> isArchived,
       Value<int> rowid,
     });
 
@@ -1487,6 +1619,11 @@ class $$CategoriesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<bool> get isArchived => $composableBuilder(
+    column: $table.isArchived,
+    builder: (column) => ColumnFilters(column),
+  );
+
   Expression<bool> transactionsRefs(
     Expression<bool> Function($$TransactionsTableFilterComposer f) f,
   ) {
@@ -1536,6 +1673,11 @@ class $$CategoriesTableOrderingComposer
     column: $table.type,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get isArchived => $composableBuilder(
+    column: $table.isArchived,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$CategoriesTableAnnotationComposer
@@ -1555,6 +1697,11 @@ class $$CategoriesTableAnnotationComposer
 
   GeneratedColumn<String> get type =>
       $composableBuilder(column: $table.type, builder: (column) => column);
+
+  GeneratedColumn<bool> get isArchived => $composableBuilder(
+    column: $table.isArchived,
+    builder: (column) => column,
+  );
 
   Expression<T> transactionsRefs<T extends Object>(
     Expression<T> Function($$TransactionsTableAnnotationComposer a) f,
@@ -1613,11 +1760,13 @@ class $$CategoriesTableTableManager
                 Value<String> id = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<String> type = const Value.absent(),
+                Value<bool> isArchived = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CategoriesCompanion(
                 id: id,
                 name: name,
                 type: type,
+                isArchived: isArchived,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -1625,11 +1774,13 @@ class $$CategoriesTableTableManager
                 required String id,
                 required String name,
                 required String type,
+                Value<bool> isArchived = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CategoriesCompanion.insert(
                 id: id,
                 name: name,
                 type: type,
+                isArchived: isArchived,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

@@ -10,6 +10,7 @@ class Wallets extends Table {
   TextColumn get id => text()();
   TextColumn get name => text()();
   IntColumn get initialBalance => integer().withDefault(const Constant(0))();
+  BoolColumn get isArchived => boolean().withDefault(const Constant(false))();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -21,6 +22,7 @@ class Categories extends Table {
   TextColumn get id => text()();
   TextColumn get name => text()();
   TextColumn get type => text()(); // 'income' atau 'expense'
+  BoolColumn get isArchived => boolean().withDefault(const Constant(false))();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -56,9 +58,9 @@ class AppDatabase extends _$AppDatabase {
     return AppDatabase(NativeDatabase.memory());
   }
 
-  // schemaVersion = 1 sesuai ketentuan Milestone 4
+  // schemaVersion = 2 sesuai ketentuan Milestone 5
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration {
@@ -68,13 +70,10 @@ class AppDatabase extends _$AppDatabase {
         await _seedInitialData(m);
       },
       onUpgrade: (Migrator m, int from, int to) async {
-        // Panduan migrasi di masa depan:
-        // Jika schemaVersion dinaikkan ke v2, periksa versi 'from':
-        // if (from < 2) {
-        //   // Contoh migrasi: tambah kolom baru atau tabel baru
-        //   // await m.addColumn(transactions, transactions.newColumn);
-        //   // await m.createTable(newTable);
-        // }
+        if (from < 2) {
+          await m.addColumn(wallets, wallets.isArchived);
+          await m.addColumn(categories, categories.isArchived);
+        }
       },
       beforeOpen: (details) async {
         // Aktifkan foreign key enforcement di SQLite
@@ -91,23 +90,23 @@ class AppDatabase extends _$AppDatabase {
   Future<void> _seedInitialData(Migrator m) async {
     await batch((b) {
       b.insertAll(wallets, [
-        WalletsCompanion.insert(id: 'bca', name: 'BCA', initialBalance: const Value(0)),
-        WalletsCompanion.insert(id: 'tunai', name: 'Tunai', initialBalance: const Value(0)),
-        WalletsCompanion.insert(id: 'ewallet', name: 'E-Wallet', initialBalance: const Value(0)),
+        WalletsCompanion.insert(id: 'bca', name: 'BCA', initialBalance: const Value(0), isArchived: const Value(false)),
+        WalletsCompanion.insert(id: 'tunai', name: 'Tunai', initialBalance: const Value(0), isArchived: const Value(false)),
+        WalletsCompanion.insert(id: 'ewallet', name: 'E-Wallet', initialBalance: const Value(0), isArchived: const Value(false)),
       ]);
 
       b.insertAll(categories, [
         // Kategori Pengeluaran
-        CategoriesCompanion.insert(id: 'exp_makanan', name: 'Makanan', type: 'expense'),
-        CategoriesCompanion.insert(id: 'exp_transportasi', name: 'Transportasi', type: 'expense'),
-        CategoriesCompanion.insert(id: 'exp_tagihan', name: 'Tagihan', type: 'expense'),
-        CategoriesCompanion.insert(id: 'exp_belanja', name: 'Belanja', type: 'expense'),
-        CategoriesCompanion.insert(id: 'exp_hiburan', name: 'Hiburan', type: 'expense'),
-        CategoriesCompanion.insert(id: 'exp_kesehatan', name: 'Kesehatan', type: 'expense'),
-        CategoriesCompanion.insert(id: 'exp_lainnya', name: 'Lainnya', type: 'expense'),
+        CategoriesCompanion.insert(id: 'exp_makanan', name: 'Makanan', type: 'expense', isArchived: const Value(false)),
+        CategoriesCompanion.insert(id: 'exp_transportasi', name: 'Transportasi', type: 'expense', isArchived: const Value(false)),
+        CategoriesCompanion.insert(id: 'exp_tagihan', name: 'Tagihan', type: 'expense', isArchived: const Value(false)),
+        CategoriesCompanion.insert(id: 'exp_belanja', name: 'Belanja', type: 'expense', isArchived: const Value(false)),
+        CategoriesCompanion.insert(id: 'exp_hiburan', name: 'Hiburan', type: 'expense', isArchived: const Value(false)),
+        CategoriesCompanion.insert(id: 'exp_kesehatan', name: 'Kesehatan', type: 'expense', isArchived: const Value(false)),
+        CategoriesCompanion.insert(id: 'exp_lainnya', name: 'Lainnya', type: 'expense', isArchived: const Value(false)),
         // Kategori Pemasukan
-        CategoriesCompanion.insert(id: 'inc_gaji', name: 'Gaji', type: 'income'),
-        CategoriesCompanion.insert(id: 'inc_lainnya', name: 'Lainnya', type: 'income'),
+        CategoriesCompanion.insert(id: 'inc_gaji', name: 'Gaji', type: 'income', isArchived: const Value(false)),
+        CategoriesCompanion.insert(id: 'inc_lainnya', name: 'Lainnya', type: 'income', isArchived: const Value(false)),
       ]);
     });
   }
