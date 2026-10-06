@@ -327,6 +327,26 @@ class FinanceState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Mengganti seluruh data (dompet, kategori, transaksi) secara atomik dari cadangan
+  Future<void> restoreData({
+    required List<Wallet> wallets,
+    required List<Category> categories,
+    required List<Transaction> transactions,
+  }) async {
+    if (_repository != null) {
+      await _repository.restoreData(
+        wallets: wallets,
+        categories: categories,
+        transactions: transactions,
+      );
+    }
+    _wallets = List.from(wallets);
+    _categories = List.from(categories);
+    _transactions = List.from(transactions);
+    _lastSelectedWalletId = null;
+    notifyListeners();
+  }
+
   /// Mengambil saldo terkini untuk seluruh dompet
   Map<String, int> get walletBalances =>
       FinanceCalculator.calculateAllWalletBalances(_wallets, _transactions);

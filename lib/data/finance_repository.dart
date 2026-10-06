@@ -171,6 +171,37 @@ class FinanceRepository {
     await addCategory(category);
   }
 
+  /// Mengganti seluruh data (dompet, kategori, transaksi) secara atomik dalam satu transaksi database.
+  /// Jika terjadi kegagalan di tengah jalan, seluruh perubahan akan di-rollback sehingga data lama tidak berubah.
+  Future<void> restoreData({
+    required List<Wallet> wallets,
+    required List<Category> categories,
+    required List<Transaction> transactions,
+  }) async {
+    await _db.transaction(() async {
+      // 1. Hapus transaksi terlebih dahulu (menghormati foreign key)
+      await _db.delete(_db.transactions).go();
+      // 2. Hapus kategori dan dompet lama
+      await _db.delete(_db.categories).go();
+      await _db.delete(_db.wallets).go();
+
+      // 3. Masukkan dompet baru
+      for (final w in wallets) {
+        await addWallet(w);
+      }
+
+      // 4. Masukkan kategori baru
+      for (final c in categories) {
+        await addCategory(c);
+      }
+
+      // 5. Masukkan transaksi baru
+      for (final tx in transactions) {
+        await addTransaction(tx);
+      }
+    });
+  }
+
   /// Menutup koneksi database
   Future<void> close() async {
     await _db.close();

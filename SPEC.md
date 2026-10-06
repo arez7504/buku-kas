@@ -158,25 +158,45 @@ Dokumen ini berisi spesifikasi kebutuhan minimal (Minimum Viable Product / MVP) 
    - Validasi input: Nama dompet dan kategori tidak boleh kosong dan tidak boleh kembar (case-insensitive) dalam kelompok yang sama.
    - Migrasi SQLite: Kolom `isArchived` (boolean, default false) ditambahkan pada tabel `Wallets` dan `Categories`. Versi skema dinaikkan ke `schemaVersion = 2` dengan strategi `onUpgrade` otomatis yang melindungi dan mempertahankan seluruh data lama (diverifikasi dengan automated migration test).
 
+8. **Milestone 6 (Backup dan Restore Data):**
+   - Fitur "Cadangkan data" di layar Pengaturan: Mengekspor seluruh data dompet, kategori, dan transaksi (termasuk status arsip) ke dalam format JSON dengan nama berkas `catatan_keuangan_YYYY-MM-DD.json`. Membuka menu Bagikan Android via `share_plus` agar dapat dikirim ke Google Drive, WhatsApp, atau disimpan ke penyimpanan perangkat.
+   - Fitur "Pulihkan data" di layar Pengaturan: Memilih berkas JSON via `file_picker`, memvalidasi struktur dan konten, menampilkan dialog pratinjau ringkasan (jumlah dompet, kategori, transaksi, dan rentang tanggal), meminta konfirmasi eksplisit, lalu mengganti seluruh data aplikasi dengan isi berkas.
+   - Operasi Database Atomik: Seluruh proses pemulihan berjalan dalam satu transaksi database tunggal (`_db.transaction`). Jika terjadi kegagalan, seluruh perubahan di-rollback sehingga data lama tidak berubah sama sekali dan tidak menyisakan data setengah jadi.
+   - Validasi Ketat & Format Versioning:
+     - Berkas memuat `formatVersion` (mulai dari 1) dan `exportedAt`. Berkas dengan `formatVersion` asing/tidak dikenal ditolak secara aman.
+     - Validasi integritas: format JSON valid, field wajib lengkap, nominal integer positif, relasi `walletId` dan `categoryId` merujuk ke data dalam berkas yang sama (transfer memiliki `targetWalletId` valid dan `categoryId` bernilai null), serta tipe transaksi valid.
+     - Berkas yang tidak lolos validasi ditolak dengan pesan dialog yang jelas tanpa menyentuh database.
+   - Logika Terisolasi: Logika serialisasi dan validasi dipisahkan secara murni di `lib/logic/backup_service.dart` tanpa ketergantungan pada UI maupun SQLite.
+
 ### B. Hal yang Belum Dikerjakan
 1. **Rincian Pengeluaran per Kategori:**
    - Visualisasi atau laporan distribusi pengeluaran per kategori (Tahap 2).
+2. **Sinkronisasi Cloud & Enkripsi Cadangan:**
+   - Sinkronisasi otomatis ke cloud dan enkripsi berkas cadangan (Tahap 2).
 
 ### C. Daftar Package (`pubspec.yaml`)
 - `flutter` (Flutter SDK)
 - `cupertino_icons: ^1.0.8` (font ikon iOS bawaan template)
 - `drift: ^2.31.0` (abstraksi database SQLite type-safe)
 - `drift_flutter: ^0.2.8` (konektivitas SQLite dan path resolver Flutter Android/iOS)
+- `share_plus: ^12.0.2` (membuka menu bagikan native Android/iOS untuk berkas cadangan tanpa izin penyimpanan khusus)
+- `file_picker: ^11.0.3` (memilih berkas JSON cadangan via Android Storage Access Framework tanpa izin penyimpanan khusus)
 - `flutter_test` (Flutter SDK - dev dependency)
 - `flutter_lints: ^5.0.0` (analisis linter - dev dependency)
 - `drift_dev: ^2.31.0` (generator kode Drift - dev dependency)
 - `build_runner: ^2.15.1` (runner generator Dart - dev dependency)
 
 ### D. Hasil `flutter test` Terakhir
-- **Total Test:** 30
-- **Lulus:** 30 (100%)
+- **Total Test:** 55
+- **Lulus:** 55 (100%)
 - **Gagal:** 0
 - **Cakupan Pengujian:**
+  - `backup_service_test.dart` (18 test): Penamaan berkas YYYY-MM-DD, round-trip serialisasi objek utuh, kalkulasi ringkasan, dan pengujian penolakan menyeluruh (JSON rusak, root non-objek, missing fields, formatVersion asing/non-integer, tanggal ekspor rusak, saldo non-integer, ID duplikat, tipe kategori salah, nominal pecahan/string, nominal <= 0, foreign key wallet/category tidak terdaftar di berkas, transfer ke dompet yang sama / target tidak ada).
+  - `backup_restore_db_test.dart` (3 test):
+    - (a) Round-trip ekspor dari database berdata lalu impor ke database kosong menghasilkan seluruh saldo dompet dan ringkasan bulanan yang sama persis.
+    - (b) Penolakan berkas cacat di level state & DB tidak mengubah data lama pada semua kasus (JSON rusak, versi asing, walletId tidak ada, nominal bukan integer).
+    - (c) Atomisitas transaksi: kegagalan di tengah proses pemulihan (simulasi foreign key failure) di-rollback utuh tanpa menyisakan data setengah jadi.
+  - `backup_restore_widget_test.dart` (4 test): Tampilan menu di Pengaturan, integrasi bagikan berkas `catatan_keuangan_YYYY-MM-DD.json`, penolakan berkas rusak via dialog, serta alur pratinjau ringkasan, pembatalan, dan konfirmasi "Ganti Seluruh Data".
   - `migration_test.dart` (1 test): Migrasi skema SQLite v1 ke v2, penambahan kolom `isArchived`, retensi data lama, dan integritas pembaruan.
   - `database_test.dart` (6 test): Seed awal 3 dompet saldo 0, operasi CRUD transaksi & foreign key, integrasi persistence & hitung ulang saldo, serta CRUD dompet & kategori di level repository.
   - `finance_calculator_test.dart` (3 test): Rumus saldo dompet, transfer antar-dompet, ringkasan bulanan, dan filter bulan.
@@ -186,6 +206,7 @@ Dokumen ini berisi spesifikasi kebutuhan minimal (Minimum Viable Product / MVP) 
 
 ### E. Asumsi & Bug yang Diketahui
 1. **Penyimpanan Permanen Aktif:** Data tersimpan lokal di SQLite perangkat Android (`catatan_keuangan.sqlite`). Data dummy hanya dipakai pada pengujian in-memory.
-2. **Nominal Bulat:** Keypad custom sengaja tidak menyediakan koma/desimal karena mata uang Rupiah disepakati disimpan dalam integer (`int`).
-3. **Judul Transaksi:** Transaksi tanpa catatan otomatis menampilkan nama kategori sebagai judul baris riwayat.
-4. **Isolasi Status Arsip:** Item dompet dan kategori yang diarsipkan tetap dipertahankan di database demi menjaga integritas historis transaksi masa lalu, namun disaring keluar dari opsi input formulir baru.
+2. **Nominal Bulat:** Seluruh nominal uang disimpan dalam integer (`int`) untuk menghindari floating-point rounding error.
+3. **Penyimpanan Tanpa Izin Khusus:** Ekspor dan impor memanfaatkan mekanisme standar OS (Android Share Sheet via `share_plus` dan Storage Access Framework via `file_picker`), sehingga tidak memerlukan izin berbahaya (`WRITE_EXTERNAL_STORAGE` / `READ_EXTERNAL_STORAGE`).
+4. **Isolasi Status Arsip:** Status arsip (`isArchived`) ikut dicadangkan dan dipulihkan sepenuhnya, menjaga konsistensi filter dompet dan kategori di seluruh aplikasi.
+5. **Transaksional Database:** Seluruh operasi restore dibungkus dalam blok `_db.transaction(...)`, menjamin sifat ACID (Atomicity, Consistency, Isolation, Durability) saat pemulihan data.
