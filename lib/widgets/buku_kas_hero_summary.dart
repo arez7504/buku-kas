@@ -5,10 +5,12 @@ import '../theme/app_theme.dart';
 // Hero Ringkasan Pengeluaran, Pemasukan, dan Selisih sesuai design/buku_kas.html
 class BukuKasHeroSummary extends StatelessWidget {
   final MonthlySummary summary;
+  final VoidCallback? onViewDetails;
 
   const BukuKasHeroSummary({
     super.key,
     required this.summary,
+    this.onViewDetails,
   });
 
   @override
@@ -32,6 +34,27 @@ class BukuKasHeroSummary extends StatelessWidget {
           Text(
             FinanceCalculator.formatRupiah(summary.totalExpense),
             style: AppTypography.headlineHeroMobile,
+          ),
+          const SizedBox(height: AppDimens.spaceXs),
+          GestureDetector(
+            key: const Key('lihat_rincian_link'),
+            onTap: onViewDetails,
+            behavior: HitTestBehavior.opaque,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Lihat rincian',
+                  style: AppTypography.labelMdActive,
+                ),
+                const SizedBox(width: AppDimens.spaceXs / 2),
+                const Icon(
+                  Icons.chevron_right,
+                  size: AppDimens.iconSmall,
+                  color: AppColors.secondary,
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: AppDimens.spaceMd),
 

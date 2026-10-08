@@ -364,6 +364,15 @@ class FinanceState extends ChangeNotifier {
   MonthlySummary getMonthlySummary(int year, int month) =>
       FinanceCalculator.calculateMonthlySummary(_transactions, year, month);
 
+  /// Mengambil rincian pengeluaran per kategori pada bulan & tahun tertentu
+  ExpenseBreakdownResult getExpenseBreakdown(int year, int month) =>
+      FinanceCalculator.calculateExpenseBreakdown(
+        _transactions,
+        _categories,
+        year,
+        month,
+      );
+
   /// Mengambil transaksi yang difilter per bulan & tahun
   List<Transaction> getTransactionsByMonth(int year, int month) =>
       FinanceCalculator.filterTransactionsByMonth(_transactions, year, month);

@@ -3,11 +3,16 @@ import '../models/transaction.dart';
 import '../theme/app_theme.dart';
 
 // Komponen penampil nominal dan chip tanggal sesuai design/catat.html
-class CatatAmountDisplay extends StatelessWidget {
+class CatatAmountDisplay extends StatefulWidget {
   final TransactionType type;
   final String formattedAmount;
   final String dateText;
   final VoidCallback onDateTap;
+  final bool? enableBlink;
+  final int? keypadTapEpoch;
+
+  /// Override untuk testing kedip kursor di widget test.
+  static bool? debugBlinkOverride;
 
   const CatatAmountDisplay({
     super.key,
@@ -15,10 +20,100 @@ class CatatAmountDisplay extends StatelessWidget {
     required this.formattedAmount,
     required this.dateText,
     required this.onDateTap,
+    this.enableBlink,
+    this.keypadTapEpoch,
   });
 
+  @override
+  State<CatatAmountDisplay> createState() => _CatatAmountDisplayState();
+}
+
+class _CatatAmountDisplayState extends State<CatatAmountDisplay>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _opacityAnimation;
+
+  static bool get _isInTest =>
+      const bool.fromEnvironment('FLUTTER_TEST') ||
+      WidgetsBinding.instance.runtimeType.toString().contains('Test');
+
+  bool _shouldBlink(BuildContext context) {
+    if (widget.enableBlink != null) {
+      return widget.enableBlink!;
+    }
+    if (CatatAmountDisplay.debugBlinkOverride != null) {
+      return CatatAmountDisplay.debugBlinkOverride!;
+    }
+    final disableAnimations = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+    if (disableAnimations) {
+      return false;
+    }
+    if (_isInTest) {
+      return false;
+    }
+    return true;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 530),
+    );
+    _opacityAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(_controller);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _updateAnimationState();
+  }
+
+  @override
+  void didUpdateWidget(CatatAmountDisplay oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.formattedAmount != oldWidget.formattedAmount ||
+        widget.keypadTapEpoch != oldWidget.keypadTapEpoch ||
+        widget.type != oldWidget.type ||
+        widget.enableBlink != oldWidget.enableBlink) {
+      _resetBlink();
+    }
+  }
+
+  void _updateAnimationState() {
+    final shouldBlink = _shouldBlink(context);
+    if (shouldBlink) {
+      if (!_controller.isAnimating) {
+        _controller.value = 0.0;
+        _controller.repeat(reverse: true);
+      }
+    } else {
+      _controller.stop();
+      _controller.value = 0.0;
+    }
+  }
+
+  void _resetBlink() {
+    final shouldBlink = _shouldBlink(context);
+    if (!shouldBlink) {
+      _controller.stop();
+      _controller.value = 0.0;
+      return;
+    }
+    _controller.stop();
+    _controller.value = 0.0;
+    _controller.repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
   String _getLabelText() {
-    switch (type) {
+    switch (widget.type) {
       case TransactionType.expense:
         return 'NOMINAL PENGELUARAN';
       case TransactionType.income:
@@ -30,6 +125,8 @@ class CatatAmountDisplay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final shouldBlink = _shouldBlink(context);
+
     return Container(
       width: double.infinity,
       color: AppColors.surfaceContainerLowest,
@@ -47,18 +144,24 @@ class CatatAmountDisplay extends StatelessWidget {
             textBaseline: TextBaseline.alphabetic,
             children: [
               const Text('Rp ', style: AppTypography.amountPrefix),
-              Text(formattedAmount, style: AppTypography.headlineHeroMobile),
-              Container(
-                width: AppDimens.caretWidth,
-                height: AppDimens.caretHeight,
-                margin: const EdgeInsets.only(left: AppDimens.spaceXs),
-                color: AppColors.secondary,
+              Text(widget.formattedAmount, style: AppTypography.headlineHeroMobile),
+              FadeTransition(
+                key: const Key('catat_cursor_fade'),
+                opacity: shouldBlink
+                    ? _opacityAnimation
+                    : const AlwaysStoppedAnimation<double>(1.0),
+                child: Container(
+                  width: AppDimens.caretWidth,
+                  height: AppDimens.caretHeight,
+                  margin: const EdgeInsets.only(left: AppDimens.spaceXs),
+                  color: AppColors.secondary,
+                ),
               ),
             ],
           ),
           const SizedBox(height: AppDimens.spaceSm),
           InkWell(
-            onTap: onDateTap,
+            onTap: widget.onDateTap,
             borderRadius: BorderRadius.circular(AppDimens.radiusFull),
             child: Container(
               padding: const EdgeInsets.symmetric(
@@ -78,7 +181,7 @@ class CatatAmountDisplay extends StatelessWidget {
                     color: AppColors.onSurfaceVariant,
                   ),
                   const SizedBox(width: AppDimens.spaceXs),
-                  Text(dateText, style: AppTypography.bodySm),
+                  Text(widget.dateText, style: AppTypography.bodySm),
                 ],
               ),
             ),

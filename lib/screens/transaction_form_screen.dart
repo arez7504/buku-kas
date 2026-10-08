@@ -87,6 +87,8 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
     }
   }
 
+  int _keypadTapEpoch = 0;
+
   @override
   void dispose() {
     _noteController.dispose();
@@ -95,6 +97,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
 
   void _onDigit(String digit) {
     setState(() {
+      _keypadTapEpoch++;
       if (_rawAmount == '0') {
         _rawAmount = digit;
       } else if (_rawAmount.length < 11) {
@@ -105,6 +108,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
 
   void _onQuickZeros() {
     setState(() {
+      _keypadTapEpoch++;
       if (_rawAmount.isNotEmpty && _rawAmount != '0' && _rawAmount.length <= 8) {
         _rawAmount += '000';
       }
@@ -113,6 +117,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
 
   void _onBackspace() {
     setState(() {
+      _keypadTapEpoch++;
       if (_rawAmount.length > 1) {
         _rawAmount = _rawAmount.substring(0, _rawAmount.length - 1);
       } else {
@@ -326,6 +331,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
               formattedAmount: _getFormattedAmount(),
               dateText: _formatDateText(_selectedDate),
               onDateTap: _pickDate,
+              keypadTapEpoch: _keypadTapEpoch,
             ),
             Padding(
               padding: const EdgeInsets.symmetric(

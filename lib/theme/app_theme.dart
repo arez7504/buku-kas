@@ -197,6 +197,8 @@ class AppDimens {
   static const double submitButtonHeight = 48.0;
   static const double appBarHeight = 56.0;
   static const double bottomListPadding = 88.0;
+  static const double expenseBarHeight = 8.0;
+  static const double expenseBarTrackRadius = 4.0;
 }
 
 // Konfigurasi ThemeData global

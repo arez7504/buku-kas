@@ -168,10 +168,21 @@ Dokumen ini berisi spesifikasi kebutuhan minimal (Minimum Viable Product / MVP) 
      - Berkas yang tidak lolos validasi ditolak dengan pesan dialog yang jelas tanpa menyentuh database.
    - Logika Terisolasi: Logika serialisasi dan validasi dipisahkan secara murni di `lib/logic/backup_service.dart` tanpa ketergantungan pada UI maupun SQLite.
 
+9. **Tahap 2 - Fitur 1 (Rincian Pengeluaran per Kategori):**
+   - Layar baru "Rincian Pengeluaran" yang dibuka melalui tautan kecil "Lihat rincian" di bawah angka "Pengeluaran bulan ini" pada Buku Kas.
+   - Header editorial dengan navigasi bulan yang tersinkronisasi dua arah dengan bulan yang dipilih di Buku Kas (menggeser bulan di rincian ikut menggeser bulan di Buku Kas).
+   - Hero total pengeluaran bulanan sebagai angka besar yang sama persis dengan total pengeluaran bulanan di Buku Kas.
+   - Distribusi kategori: menampilkan setiap kategori pengeluaran yang memiliki transaksi pada bulan itu, diurutkan dari nominal terbesar ke terkecil.
+   - Setiap baris menampilkan nama kategori, nominal rupiah, persentase dari total (satu angka di belakang koma, contoh: 58,5%), dan batang horizontal proporsional dengan satu warna aksen terracotta (`AppColors.secondary`).
+   - Batang horizontal sebanding dengan nominal (kategori terbesar memiliki batang terpanjang, dibatasi dalam margin layout dan bukan 100% layar).
+   - Kategori yang diarsipkan tetap dihitung dan ditampilkan dengan namanya jika memiliki transaksi pengeluaran.
+   - Transaksi transfer dan pemasukan dikecualikan secara ketat dari rincian pengeluaran.
+   - Penanganan bulan tanpa transaksi pengeluaran dengan pesan kondisi kosong yang jelas dan informatif.
+   - Logika kalkulasi terisolasi secara murni pada `FinanceCalculator.calculateExpenseBreakdown`.
+   - UI mematuhi tokenisasi terpusat `AppTheme` tanpa nilai warna/dimensi mentah langsung di widget.
+
 ### B. Hal yang Belum Dikerjakan
-1. **Rincian Pengeluaran per Kategori:**
-   - Visualisasi atau laporan distribusi pengeluaran per kategori (Tahap 2).
-2. **Sinkronisasi Cloud & Enkripsi Cadangan:**
+1. **Sinkronisasi Cloud & Enkripsi Cadangan:**
    - Sinkronisasi otomatis ke cloud dan enkripsi berkas cadangan (Tahap 2).
 
 ### C. Daftar Package (`pubspec.yaml`)
@@ -187,10 +198,13 @@ Dokumen ini berisi spesifikasi kebutuhan minimal (Minimum Viable Product / MVP) 
 - `build_runner: ^2.15.1` (runner generator Dart - dev dependency)
 
 ### D. Hasil `flutter test` Terakhir
-- **Total Test:** 61
-- **Lulus:** 61 (100%)
+- **Total Test:** 75
+- **Lulus:** 75 (100%)
 - **Gagal:** 0
 - **Cakupan Pengujian:**
+  - `expense_breakdown_test.dart` (6 test): Urutan kategori dari terbesar, kalkulasi persen 1 desimal (kasus 58,5 / 24,4 / 17,1 dan total 205.000), pengecualian transfer dan pemasukan, retensi kategori terarsip, penanganan bulan kosong, integritas kesamaan total dengan ringkasan bulanan Buku Kas, dan akumulasi beberapa transaksi dalam satu kategori.
+  - `expense_breakdown_widget_test.dart` (4 test): Keberadaan tautan "Lihat rincian" di Buku Kas dan alur navigasi ke layar Rincian Pengeluaran, visualisasi baris per kategori terurut dengan nominal, persen, dan batang proporsional, pesan kondisi kosong yang jelas saat bulan tanpa pengeluaran, dan sinkronisasi perpindahan bulan dua arah ke Buku Kas.
+  - `catat_cursor_test.dart` (4 test): Perilaku kursor kedip ~530 ms per fase dengan transisi halus opacity, reset instan ke opacity 1.0 dan mulai ulang siklus saat keypad ditekan, penghormatan pengaturan Android "kurangi animasi" (`disableAnimations`), dan pembersihan animasi (`dispose`) saat layar ditutup.
   - `backup_service_test.dart` (21 test): Penamaan berkas YYYY-MM-DD, round-trip serialisasi objek utuh, kalkulasi ringkasan termasuk `exportedAt` & `exportedAtText`, serta pengujian penolakan menyeluruh (JSON rusak, root non-objek, missing fields, formatVersion asing/non-integer, tanggal ekspor rusak, saldo non-integer, ID duplikat, tipe kategori salah, nominal pecahan/string, nominal <= 0, foreign key wallet/category tidak terdaftar di berkas, transfer ke dompet yang sama / target tidak ada, file .json sembarang yang isinya bukan backup, dan penolakan file > 20 MB).
   - `backup_restore_db_test.dart` (3 test):
     - (a) Round-trip ekspor dari database berdata lalu impor ke database kosong menghasilkan seluruh saldo dompet dan ringkasan bulanan yang sama persis.
@@ -212,3 +226,5 @@ Dokumen ini berisi spesifikasi kebutuhan minimal (Minimum Viable Product / MVP) 
 5. **Pemulihan Fleksibel & Batasan Ukuran:** Pemilih berkas menggunakan `FileType.any` tanpa pembatasan ekstensi kaku, dengan validasi berbasis isi data JSON dan batasan ukuran maksimal 20 MB untuk keamanan memori.
 6. **Isolasi Status Arsip:** Status arsip (`isArchived`) ikut dicadangkan dan dipulihkan sepenuhnya, menjaga konsistensi filter dompet dan kategori di seluruh aplikasi.
 7. **Transaksional Database:** Seluruh operasi restore dibungkus dalam blok `_db.transaction(...)`, menjamin sifat ACID (Atomicity, Consistency, Isolation, Durability) saat pemulihan data.
+8. **Animasi Kursor Kedip & Kompatibilitas Widget Test:** Kursor nominal berkedip setiap ~530 ms per fase dengan transisi halus `FadeTransition`. Siklus langsung di-reset dan kursor tampil penuh (opacity 1.0) setiap kali tombol keypad ditekan. Animasi dihentikan dan di-dispose saat layar ditutup, serta otomatis diam dan statis (opacity 1.0) saat pengaturan Android "kurangi animasi" (`disableAnimations`) aktif. Di lingkungan widget test otomatis, blinking dicegah agar `tester.pumpAndSettle()` pada suite pengujian umum tidak menggantung, sementara unit/widget test khusus kursor dapat menguji animasi secara terisolasi.
+9. **Skala Batang Rincian Pengeluaran:** Batang horizontal per kategori dinormalisasi terhadap nominal kategori pengeluaran terbesar pada bulan terpilih (`amount / maxAmount`), dengan lebar track dibatasi oleh margin standar aplikasi (`AppDimens.margin`) sehingga tidak meluap atau memenuhi 100% lebar layar.

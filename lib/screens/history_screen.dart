@@ -7,6 +7,7 @@ import '../widgets/buku_kas_day_group.dart';
 import '../widgets/buku_kas_header.dart';
 import '../widgets/buku_kas_hero_summary.dart';
 import '../widgets/buku_kas_wallet_bar.dart';
+import 'expense_breakdown_screen.dart';
 import 'settings_screen.dart';
 import 'transaction_form_screen.dart';
 
@@ -48,6 +49,27 @@ class _HistoryScreenState extends State<HistoryScreen> {
         builder: (_) => TransactionFormScreen(transaction: transaction),
       ),
     );
+  }
+
+  void _openExpenseBreakdown() async {
+    final updatedMonth = await Navigator.push<DateTime>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ExpenseBreakdownScreen(
+          selectedMonth: _selectedMonth,
+          onMonthChanged: (newMonth) {
+            setState(() {
+              _selectedMonth = newMonth;
+            });
+          },
+        ),
+      ),
+    );
+    if (updatedMonth != null && mounted) {
+      setState(() {
+        _selectedMonth = updatedMonth;
+      });
+    }
   }
 
   // Mengelompokkan transaksi per hari (tanggal yang sama)
@@ -134,7 +156,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
             ),
 
             // 2. Ringkasan Pengeluaran (angka besar), Pemasukan, dan Selisih
-            BukuKasHeroSummary(summary: summary),
+            BukuKasHeroSummary(
+              summary: summary,
+              onViewDetails: _openExpenseBreakdown,
+            ),
 
             // 3. Pembagian saldo semua dompet tanpa terpotong (hanya dompet aktif)
             BukuKasWalletBar(
