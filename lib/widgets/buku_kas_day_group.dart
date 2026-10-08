@@ -4,78 +4,64 @@ import '../models/transaction.dart';
 import '../theme/app_theme.dart';
 import 'buku_kas_transaction_row.dart';
 
-// Pengelompokan transaksi per hari dengan subtotal harian sesuai design/buku_kas.html
+// Pengelompokan transaksi per hari dengan subtotal harian
 class BukuKasDayGroup extends StatelessWidget {
-  final DateTime date;
-  final List<Transaction> transactions;
+  final DailyTransactionGroup group;
   final String Function(String) getWalletName;
   final String Function(String?) getCategoryName;
   final void Function(Transaction) onTransactionTap;
+  final DateTime? now;
 
   const BukuKasDayGroup({
     super.key,
-    required this.date,
-    required this.transactions,
+    required this.group,
     required this.getWalletName,
     required this.getCategoryName,
     required this.onTransactionTap,
+    this.now,
   });
-
-  String _formatDateHeader(DateTime d) {
-    const months = ['JAN', 'FEB', 'MAR', 'APR', 'MEI', 'JUN', 'JUL', 'AGU', 'SEP', 'OKT', 'NOV', 'DES'];
-    final now = DateTime.now();
-    final isToday = now.year == d.year && now.month == d.month && now.day == d.day;
-    final yest = now.subtract(const Duration(days: 1));
-    final isYesterday = yest.year == d.year && yest.month == d.month && yest.day == d.day;
-
-    final base = '${d.day} ${months[d.month - 1]} ${d.year}';
-    if (isToday) return 'HARI INI, $base';
-    if (isYesterday) return 'KEMARIN, $base';
-    return base;
-  }
 
   @override
   Widget build(BuildContext context) {
-    // Hitung subtotal: masuk - keluar, transfer tidak dihitung
-    int subtotal = 0;
-    for (final tx in transactions) {
-      if (tx.type == TransactionType.income) {
-        subtotal += tx.amount;
-      } else if (tx.type == TransactionType.expense) {
-        subtotal -= tx.amount;
-      }
+    final subtotalText = FinanceCalculator.formatDailySubtotal(group.subtotal);
+    final TextStyle subtotalStyle;
+    if (group.subtotal != null && group.subtotal! > 0) {
+      subtotalStyle = AppTypography.dayGroupSubtotalGreen;
+    } else if (group.subtotal != null && group.subtotal! < 0) {
+      subtotalStyle = AppTypography.dayGroupSubtotalRed;
+    } else {
+      subtotalStyle = AppTypography.dayGroupSubtotalNeutral;
     }
-
-    final subtotalText = subtotal > 0
-        ? '+ ${FinanceCalculator.formatRupiah(subtotal)}'
-        : (subtotal < 0 ? '− ${FinanceCalculator.formatRupiah(subtotal.abs())}' : 'Rp 0');
-
-    final subtotalStyle = subtotal > 0
-        ? AppTypography.bodySm.copyWith(color: AppColors.incomeGreen)
-        : AppTypography.bodySm.copyWith(color: AppColors.onSurfaceVariant);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Bar tanggal & subtotal harian
+        // Bar judul kelompok: lebar penuh, latar sedikit berbeda, tinggi ringkas
         Container(
           width: double.infinity,
           color: AppColors.surfaceContainerLow,
           padding: const EdgeInsets.symmetric(
             horizontal: AppDimens.margin,
-            vertical: AppDimens.spaceXs,
+            vertical: AppDimens.spaceXs + 2,
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(_formatDateHeader(date), style: AppTypography.labelCaps),
-              Text(subtotalText, style: subtotalStyle),
+              Text(
+                FinanceCalculator.formatDayGroupHeader(group.date, now: now),
+                style: AppTypography.dayGroupHeaderDate,
+              ),
+              if (subtotalText != null)
+                Text(
+                  subtotalText,
+                  style: subtotalStyle,
+                ),
             ],
           ),
         ),
 
-        // Daftar baris transaksi hari tersebut
-        for (int i = 0; i < transactions.length; i++) ...[
+        // Daftar baris transaksi dipisahkan dengan garis tipis antar baris
+        for (int i = 0; i < group.transactions.length; i++) ...[
           if (i > 0)
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: AppDimens.margin),
@@ -86,13 +72,13 @@ class BukuKasDayGroup extends StatelessWidget {
               ),
             ),
           BukuKasTransactionRow(
-            transaction: transactions[i],
-            walletName: getWalletName(transactions[i].walletId),
-            targetWalletName: transactions[i].targetWalletId != null
-                ? getWalletName(transactions[i].targetWalletId!)
+            transaction: group.transactions[i],
+            walletName: getWalletName(group.transactions[i].walletId),
+            targetWalletName: group.transactions[i].targetWalletId != null
+                ? getWalletName(group.transactions[i].targetWalletId!)
                 : null,
-            categoryName: getCategoryName(transactions[i].categoryId),
-            onTap: () => onTransactionTap(transactions[i]),
+            categoryName: getCategoryName(group.transactions[i].categoryId),
+            onTap: () => onTransactionTap(group.transactions[i]),
           ),
         ],
         const SizedBox(height: AppDimens.spaceSm),

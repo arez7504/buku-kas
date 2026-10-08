@@ -3,15 +3,15 @@ import '../logic/finance_state.dart';
 import '../models/transaction.dart';
 import '../theme/app_theme.dart';
 import '../widgets/buku_kas_action_button.dart';
-import '../widgets/buku_kas_day_group.dart';
 import '../widgets/buku_kas_header.dart';
 import '../widgets/buku_kas_hero_summary.dart';
+import '../widgets/buku_kas_day_group.dart';
 import '../widgets/buku_kas_wallet_bar.dart';
 import 'expense_breakdown_screen.dart';
 import 'settings_screen.dart';
 import 'transaction_form_screen.dart';
 
-// HistoryScreen: Layar utama Buku Kas sesuai design/buku_kas.html dan design/buku_kas.png
+// HistoryScreen: Layar utama Buku Kas sesuai revisi keterbacaan
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
 
@@ -72,16 +72,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
     }
   }
 
-  // Mengelompokkan transaksi per hari (tanggal yang sama)
-  Map<DateTime, List<Transaction>> _groupByDay(List<Transaction> transactions) {
-    final Map<DateTime, List<Transaction>> grouped = {};
-    for (final tx in transactions) {
-      final key = DateTime(tx.date.year, tx.date.month, tx.date.day);
-      grouped.putIfAbsent(key, () => []).add(tx);
-    }
-    return grouped;
-  }
-
   Widget _buildEmptyState() {
     return Padding(
       padding: const EdgeInsets.symmetric(
@@ -120,8 +110,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
       _selectedMonth.month,
     );
 
-    final groupedByDay = _groupByDay(filteredTransactions);
-    final sortedDays = groupedByDay.keys.toList()..sort((a, b) => b.compareTo(a));
+    final dailyGroups = state.getDailyTransactionGroups(
+      _selectedMonth.year,
+      _selectedMonth.month,
+    );
 
     return Scaffold(
       backgroundColor: AppColors.surface,
@@ -133,16 +125,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         child: ListView(
           padding: const EdgeInsets.only(bottom: AppDimens.bottomListPadding),
           children: [
-            // Baris pendukung test compatibility
-            const Row(
-              children: [
-                Text('Catatan Keuangan', style: AppTypography.hiddenTestHelper),
-                Text('Saldo Dompet', style: AppTypography.hiddenTestHelper),
-                Text('Riwayat Transaksi', style: AppTypography.hiddenTestHelper),
-              ],
-            ),
-
-            // 1. Header navigasi bulan tanpa AppBar salmon dan tombol Pengaturan
+            // 1. Header judul layar 'Catatan Keuangan' dan navigasi bulan
             BukuKasHeader(
               selectedMonth: _selectedMonth,
               onPreviousMonth: _previousMonth,
@@ -155,70 +138,50 @@ class _HistoryScreenState extends State<HistoryScreen> {
               },
             ),
 
-            // 2. Ringkasan Pengeluaran (angka besar), Pemasukan, dan Selisih
-            BukuKasHeroSummary(
-              summary: summary,
-              onViewDetails: _openExpenseBreakdown,
-            ),
-
-            // 3. Pembagian saldo semua dompet tanpa terpotong (hanya dompet aktif)
+            // 2. Saldo tiap dompet sebagai kotak terpisah horizontal
             BukuKasWalletBar(
               wallets: state.activeWallets,
               walletBalances: walletBalances,
             ),
 
-            const Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: AppDimens.margin,
-                vertical: AppDimens.spaceSm,
-              ),
-              child: Divider(
-                height: AppDimens.borderWidthThin,
-                thickness: AppDimens.borderWidthThin,
-                color: AppColors.surfaceContainerHigh,
-              ),
+            // 3. Ringkasan Pemasukan, Pengeluaran, Selisih dalam satu kartu (tiga kolom sejajar)
+            BukuKasHeroSummary(
+              summary: summary,
+              onViewDetails: _openExpenseBreakdown,
             ),
 
-            // 4. Judul seksi Transaksi Terkini
+            // 4. Judul seksi Riwayat Transaksi + counter
             Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: AppDimens.margin,
                 vertical: AppDimens.spaceSm,
               ),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Transaksi Terkini', style: AppTypography.headlineSmItalic),
-                  const SizedBox(width: AppDimens.spaceSm),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppDimens.spaceXs,
-                      vertical: AppDimens.spaceXs / 2,
-                    ),
-                    color: AppColors.surfaceContainerHigh,
-                    child: Text(
-                      '${filteredTransactions.length} CATATAN',
-                      style: AppTypography.labelCaps,
-                    ),
+                  const Text('Riwayat Transaksi', style: AppTypography.sectionHeaderTitle),
+                  Text(
+                    '${filteredTransactions.length} transaksi',
+                    style: AppTypography.sectionHeaderCount,
                   ),
                 ],
               ),
             ),
 
-            // 5. Daftar transaksi berkelompok per hari atau indikator memuat / pesan kosong
+            // 5. Daftar transaksi dikelompokkan per hari atau status memuat / pesan kosong
             if (state.isLoading)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: AppDimens.spaceXl),
                 child: Center(
-                  child: CircularProgressIndicator(color: AppColors.primary),
+                  child: CircularProgressIndicator(color: AppColors.secondary),
                 ),
               )
-            else if (filteredTransactions.isEmpty)
+            else if (dailyGroups.isEmpty)
               _buildEmptyState()
             else
-              for (final dayKey in sortedDays)
+              for (final group in dailyGroups)
                 BukuKasDayGroup(
-                  date: dayKey,
-                  transactions: groupedByDay[dayKey]!,
+                  group: group,
                   getWalletName: state.getWalletName,
                   getCategoryName: state.getCategoryName,
                   onTransactionTap: (tx) => _openTransactionForm(tx),

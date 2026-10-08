@@ -377,6 +377,10 @@ class FinanceState extends ChangeNotifier {
   List<Transaction> getTransactionsByMonth(int year, int month) =>
       FinanceCalculator.filterTransactionsByMonth(_transactions, year, month);
 
+  /// Mengambil kelompok transaksi per hari dengan subtotal harian pada bulan & tahun tertentu
+  List<DailyTransactionGroup> getDailyTransactionGroups(int year, int month) =>
+      FinanceCalculator.groupTransactionsByDay(_transactions, year, month);
+
   /// Helper untuk mengambil nama dompet dari ID
   String getWalletName(String walletId) {
     final match = _wallets.where((w) => w.id == walletId);

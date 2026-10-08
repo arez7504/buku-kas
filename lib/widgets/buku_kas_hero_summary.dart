@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../logic/finance_calculator.dart';
 import '../theme/app_theme.dart';
 
-// Hero Ringkasan Pengeluaran, Pemasukan, dan Selisih sesuai design/buku_kas.html
+// Kartu Ringkasan: Pemasukan, Pengeluaran, dan Selisih dalam tiga kolom sejajar berlebar sama
 class BukuKasHeroSummary extends StatelessWidget {
   final MonthlySummary summary;
   final VoidCallback? onViewDetails;
@@ -13,88 +13,137 @@ class BukuKasHeroSummary extends StatelessWidget {
     this.onViewDetails,
   });
 
+  Widget _buildSummaryColumn({
+    required String label,
+    required String amountText,
+    required TextStyle amountStyle,
+  }) {
+    return Expanded(
+      flex: 1,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppDimens.spaceMd),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              label,
+              style: AppTypography.summaryColumnLabel,
+              maxLines: 1,
+            ),
+            const SizedBox(height: AppDimens.spaceXs),
+            SizedBox(
+              width: double.infinity,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  amountText,
+                  maxLines: 1,
+                  style: amountStyle,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final netColor = summary.netCashFlow >= 0
-        ? AppColors.onSurface
-        : AppColors.expenseRed;
+    final isNegative = summary.netCashFlow < 0;
+    final selisihText = isNegative
+        ? '- ${FinanceCalculator.formatRupiah(summary.netCashFlow.abs())}'
+        : FinanceCalculator.formatRupiah(summary.netCashFlow);
+    final selisihStyle = isNegative
+        ? AppTypography.summaryAmountExpense
+        : AppTypography.summaryAmountSelisih;
 
-    return Padding(
-      padding: const EdgeInsets.only(
-        left: AppDimens.margin,
-        right: AppDimens.margin,
-        top: AppDimens.spaceLg,
-        bottom: AppDimens.spaceSm,
+    return Container(
+      margin: const EdgeInsets.symmetric(
+        horizontal: AppDimens.margin,
+        vertical: AppDimens.spaceSm,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(AppDimens.radiusXl),
+        border: Border.all(
+          color: AppColors.outlineVariant,
+          width: AppDimens.borderWidthThin,
+        ),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text('PENGELUARAN BULAN INI', style: AppTypography.labelCaps),
-          const SizedBox(height: AppDimens.spaceXs),
-          Text(
-            FinanceCalculator.formatRupiah(summary.totalExpense),
-            style: AppTypography.headlineHeroMobile,
-          ),
-          const SizedBox(height: AppDimens.spaceXs),
-          GestureDetector(
-            key: const Key('lihat_rincian_link'),
-            onTap: onViewDetails,
-            behavior: HitTestBehavior.opaque,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  'Lihat rincian',
-                  style: AppTypography.labelMdActive,
-                ),
-                const SizedBox(width: AppDimens.spaceXs / 2),
-                const Icon(
-                  Icons.chevron_right,
-                  size: AppDimens.iconSmall,
-                  color: AppColors.secondary,
-                ),
-              ],
+          // Tiga kolom dengan lebar SAMA dan pemisah vertikal tinggi penuh
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: AppDimens.summaryCardPadding),
+            child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildSummaryColumn(
+                    label: 'Pemasukan',
+                    amountText: '+ ${FinanceCalculator.formatRupiah(summary.totalIncome)}',
+                    amountStyle: AppTypography.summaryAmountIncome,
+                  ),
+                  Container(
+                    width: AppDimens.borderWidthThin,
+                    color: AppColors.outlineVariant,
+                  ),
+                  _buildSummaryColumn(
+                    label: 'Pengeluaran',
+                    amountText: FinanceCalculator.formatRupiah(summary.totalExpense),
+                    amountStyle: AppTypography.summaryAmountExpense,
+                  ),
+                  Container(
+                    width: AppDimens.borderWidthThin,
+                    color: AppColors.outlineVariant,
+                  ),
+                  _buildSummaryColumn(
+                    label: 'Selisih',
+                    amountText: selisihText,
+                    amountStyle: selisihStyle,
+                  ),
+                ],
+              ),
             ),
           ),
-          const SizedBox(height: AppDimens.spaceMd),
 
-          // Sub-ringkasan dua kolom: Pemasukan dan Selisih
-          Container(
-            color: AppColors.surfaceContainerLow,
-            padding: const EdgeInsets.all(AppDimens.spaceMd),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('PEMASUKAN', style: AppTypography.labelCaps),
-                      const SizedBox(height: AppDimens.spaceXs / 2),
-                      Text(
-                        '+ ${FinanceCalculator.formatRupiah(summary.totalIncome)}',
-                        style: AppTypography.amountRowGreen,
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: Container(
-                    color: AppColors.surface,
-                    padding: const EdgeInsets.all(AppDimens.spaceSm),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('SELISIH', style: AppTypography.labelCaps),
-                        const SizedBox(height: AppDimens.spaceXs / 2),
-                        Text(
-                          FinanceCalculator.formatRupiah(summary.netCashFlow),
-                          style: AppTypography.amountRow.copyWith(color: netColor),
-                        ),
-                      ],
+          // Garis tipis horizontal pemisah tautan
+          const Divider(
+            height: AppDimens.borderWidthThin,
+            thickness: AppDimens.borderWidthThin,
+            color: AppColors.outlineVariant,
+          ),
+
+          // Baris tersendiri di bawah ketiga kolom, rata kanan: "Lihat rincian pengeluaran"
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppDimens.spaceMd,
+              vertical: AppDimens.spaceSm + 2,
+            ),
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: GestureDetector(
+                key: const Key('lihat_rincian_link'),
+                onTap: onViewDetails,
+                behavior: HitTestBehavior.opaque,
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('Lihat rincian', style: AppTypography.labelSmLink),
+                    Text(' pengeluaran', style: AppTypography.labelSmLink),
+                    SizedBox(width: AppDimens.spaceXs / 2),
+                    Icon(
+                      Icons.chevron_right,
+                      size: AppDimens.iconTiny,
+                      color: AppColors.secondary,
                     ),
-                  ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ],

@@ -181,6 +181,23 @@ Dokumen ini berisi spesifikasi kebutuhan minimal (Minimum Viable Product / MVP) 
    - Logika kalkulasi terisolasi secara murni pada `FinanceCalculator.calculateExpenseBreakdown`.
    - UI mematuhi tokenisasi terpusat `AppTheme` tanpa nilai warna/dimensi mentah langsung di widget.
 
+#10. **Revisi Layar Buku Kas (Konsistensi Ringkasan & Pemisah per Hari):**
+   - **Kartu Ringkasan (Pemasukan / Pengeluaran / Selisih):**
+     - Tiga kolom dengan lebar identik (`Expanded(flex: 1)`).
+     - Pemisah vertikal tipis penuh di antara ketiga kolom dengan tinggi penuh kartu (`IntrinsicHeight`, `crossAxisAlignment: CrossAxisAlignment.stretch`), berwarna sama dengan garis tepi kartu (`AppColors.outlineVariant`).
+     - Padding horizontal yang seragam (`AppDimens.spaceMd`) pada semua kolom.
+     - Susunan kolom identik: label di atas (`AppTypography.summaryColumnLabel`), nominal di bawah dengan ukuran font sama (15 sp, w700).
+     - Nominal dibungkus `FittedBox(fit: BoxFit.scaleDown)` satu baris (`maxLines: 1`), tidak membungkus ke baris kedua atau menempel ke kolom tetangga.
+     - Tautan rincian dipindahkan dari kolom Pengeluaran ke baris tersendiri di bawah ketiga kolom, dipisahkan garis tipis horizontal, rata kanan, dengan teks "Lihat rincian pengeluaran" dan ikon panah.
+     - Selisih negatif: tampil dengan tanda minus (`- Rp ...`) dan warna merah (`AppColors.expenseRed`). Selisih nol atau positif tetap menggunakan warna teal (`AppColors.selisihTeal`).
+   - **Daftar Transaksi Dikelompokkan per Hari:**
+     - Fungsi murni `FinanceCalculator.groupTransactionsByDay` mengelompokkan transaksi bulan terpilih per tanggal (tahun-bulan-hari, waktu lokal perangkat), urut hari terbaru di atas, dan di dalam satu hari urut transaksi terbaru di atas.
+     - Judul tiap kelompok: kiri tanggal ("HARI INI, 8 OKT 2026", "KEMARIN, 7 OKT 2026", atau lainnya contoh "6 OKT 2026" dalam singkatan bulan kapital baku), kanan subtotal harian.
+     - Subtotal harian = total pemasukan dikurangi total pengeluaran hari itu (transfer diabaikan secara ketat). Hari yang hanya berisi transfer tidak menampilkan subtotal (bukan "Rp 0"). Subtotal positif bertanda `+ Rp ...` (hijau), subtotal negatif bertanda `- Rp ...` (merah).
+     - Judul kelompok berlatar kontras lembut (`AppColors.surfaceContainerLow`), lebar penuh, dan tinggi ringkas.
+     - Baris transaksi di dalam kelompok tidak lagi menampilkan tanggal (sudah terwakili pada judul), berformat flat tanpa kartu individual, dipisahkan garis tipis antar baris, dan tap tetap membuka form edit transaksi.
+     - Invarian matematika: jumlah seluruh subtotal harian dalam satu bulan sama persis dengan nilai Selisih bulanan di kartu ringkasan.
+
 ### B. Hal yang Belum Dikerjakan
 1. **Sinkronisasi Cloud & Enkripsi Cadangan:**
    - Sinkronisasi otomatis ke cloud dan enkripsi berkas cadangan (Tahap 2).
@@ -198,10 +215,14 @@ Dokumen ini berisi spesifikasi kebutuhan minimal (Minimum Viable Product / MVP) 
 - `build_runner: ^2.15.1` (runner generator Dart - dev dependency)
 
 ### D. Hasil `flutter test` Terakhir
-- **Total Test:** 75
-- **Lulus:** 75 (100%)
+- **Total Test:** 90
+- **Lulus:** 90 (100%)
 - **Gagal:** 0
 - **Cakupan Pengujian:**
+  - `daily_grouping_test.dart` (15 test):
+    - (a) Pengelompokan harian: transaksi di dua hari berbeda menghasilkan dua kelompok urut terbaru di atas, urutan transaksi intraday terbaru di atas, kalkulasi subtotal harian (pemasukan - pengeluaran), pengecualian transfer dari subtotal harian, peniadaan subtotal untuk hari berisi transfer saja (`subtotal == null`), pelabelan "HARI INI, 8 OKT 2026", "KEMARIN, 7 OKT 2026", dan singkatan kapital baku bulan lainnya ("6 OKT 2026", "17 AGU 2026").
+    - (b) Invarian matematika: verifikasi kesamaan jumlah seluruh subtotal harian satu bulan dengan Selisih bulanan di kartu ringkasan (`sum(dailySubtotals) == netCashFlow`), baik dalam kondisi selisih positif maupun negatif.
+    - (c) Widget test: kartu ringkasan 3 kolom sama lebar (`Expanded flex: 1`), `FittedBox(scaleDown)`, pemisah vertikal penuh, selisih negatif merah dengan tanda minus (`- Rp ...`), selisih positif teal (`Rp ...`), tautan "Lihat rincian pengeluaran" di baris tersendiri rata kanan, baris transaksi tanpa tanggal dan tap membuka form edit `TransactionFormScreen`, serta penampilan subtotal harian hijau (+), merah (-), dan tidak ada subtotal untuk hari berisi transfer saja.
   - `expense_breakdown_test.dart` (6 test): Urutan kategori dari terbesar, kalkulasi persen 1 desimal (kasus 58,5 / 24,4 / 17,1 dan total 205.000), pengecualian transfer dan pemasukan, retensi kategori terarsip, penanganan bulan kosong, integritas kesamaan total dengan ringkasan bulanan Buku Kas, dan akumulasi beberapa transaksi dalam satu kategori.
   - `expense_breakdown_widget_test.dart` (4 test): Keberadaan tautan "Lihat rincian" di Buku Kas dan alur navigasi ke layar Rincian Pengeluaran, visualisasi baris per kategori terurut dengan nominal, persen, dan batang proporsional, pesan kondisi kosong yang jelas saat bulan tanpa pengeluaran, dan sinkronisasi perpindahan bulan dua arah ke Buku Kas.
   - `catat_cursor_test.dart` (4 test): Perilaku kursor kedip ~530 ms per fase dengan transisi halus opacity, reset instan ke opacity 1.0 dan mulai ulang siklus saat keypad ditekan, penghormatan pengaturan Android "kurangi animasi" (`disableAnimations`), dan pembersihan animasi (`dispose`) saat layar ditutup.
@@ -228,3 +249,4 @@ Dokumen ini berisi spesifikasi kebutuhan minimal (Minimum Viable Product / MVP) 
 7. **Transaksional Database:** Seluruh operasi restore dibungkus dalam blok `_db.transaction(...)`, menjamin sifat ACID (Atomicity, Consistency, Isolation, Durability) saat pemulihan data.
 8. **Animasi Kursor Kedip & Kompatibilitas Widget Test:** Kursor nominal berkedip setiap ~530 ms per fase dengan transisi halus `FadeTransition`. Siklus langsung di-reset dan kursor tampil penuh (opacity 1.0) setiap kali tombol keypad ditekan. Animasi dihentikan dan di-dispose saat layar ditutup, serta otomatis diam dan statis (opacity 1.0) saat pengaturan Android "kurangi animasi" (`disableAnimations`) aktif. Di lingkungan widget test otomatis, blinking dicegah agar `tester.pumpAndSettle()` pada suite pengujian umum tidak menggantung, sementara unit/widget test khusus kursor dapat menguji animasi secara terisolasi.
 9. **Skala Batang Rincian Pengeluaran:** Batang horizontal per kategori dinormalisasi terhadap nominal kategori pengeluaran terbesar pada bulan terpilih (`amount / maxAmount`), dengan lebar track dibatasi oleh margin standar aplikasi (`AppDimens.margin`) sehingga tidak meluap atau memenuhi 100% lebar layar.
+10. **Subtotal Harian & Pengecualian Transfer:** Subtotal harian pada judul kelompok semata-mata menghitung arus kas bersih (pemasukan - pengeluaran). Transaksi bertipe transfer tidak menambah maupun mengurangi subtotal harian dan tidak ditampilkan jika dalam satu hari hanya terdapat transaksi transfer. Jumlah seluruh subtotal harian satu bulan secara matematis selalu sama dengan nilai Selisih pada kartu ringkasan bulanan.

@@ -3,7 +3,7 @@ import '../logic/finance_calculator.dart';
 import '../models/wallet.dart';
 import '../theme/app_theme.dart';
 
-// Baris pembagian saldo semua dompet (BCA, Tunai, E-Wallet) sesuai design/buku_kas.html
+// Kartu Saldo Dompet: Kotak terpisah per dompet yang bisa digeser horizontal
 class BukuKasWalletBar extends StatelessWidget {
   final List<Wallet> wallets;
   final Map<String, int> walletBalances;
@@ -14,69 +14,91 @@ class BukuKasWalletBar extends StatelessWidget {
     required this.walletBalances,
   });
 
-  IconData _getWalletIcon(String walletId) {
-    switch (walletId.toLowerCase()) {
-      case 'bca':
-        return Icons.account_balance;
-      case 'tunai':
-        return Icons.payments;
-      case 'ewallet':
-        return Icons.wallet;
-      default:
-        return Icons.account_balance_wallet;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: double.infinity,
-      color: AppColors.surfaceContainer,
-      margin: const EdgeInsets.symmetric(horizontal: AppDimens.margin),
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppDimens.spaceMd,
+      margin: const EdgeInsets.symmetric(
+        horizontal: AppDimens.margin,
         vertical: AppDimens.spaceSm,
       ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
-            for (int i = 0; i < wallets.length; i++) ...[
-              if (i > 0)
-                Container(
-                  height: AppDimens.spaceMd - AppDimens.spaceXs,
-                  width: AppDimens.borderWidthThin,
-                  color: AppColors.outlineVariant,
-                  margin: const EdgeInsets.symmetric(horizontal: AppDimens.spaceSm),
-                ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    _getWalletIcon(wallets[i].id),
-                    size: AppDimens.iconSmall,
-                    color: AppColors.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: AppDimens.spaceXs),
-                  Text(
-                    wallets[i].name,
-                    style: AppTypography.bodySm.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.onSurface,
-                    ),
-                  ),
-                  const SizedBox(width: AppDimens.spaceXs),
-                  Text(
-                    FinanceCalculator.formatRupiah(
-                      walletBalances[wallets[i].id] ?? wallets[i].initialBalance,
-                    ),
-                    style: AppTypography.bodySm.copyWith(color: AppColors.onSurface),
-                  ),
-                ],
+      padding: const EdgeInsets.all(AppDimens.spaceMd),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(AppDimens.radiusXl),
+        border: Border.all(
+          color: AppColors.outlineVariant,
+          width: AppDimens.borderWidthThin,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header kartu Saldo Dompet
+          const Row(
+            children: [
+              Icon(
+                Icons.account_balance_wallet,
+                size: AppDimens.iconMedium,
+                color: AppColors.secondary,
+              ),
+              SizedBox(width: AppDimens.spaceSm),
+              Text(
+                'Saldo Dompet',
+                style: AppTypography.cardSectionTitle,
               ),
             ],
-          ],
-        ),
+          ),
+          const SizedBox(height: AppDimens.spaceSm),
+          const Divider(
+            height: AppDimens.borderWidthThin,
+            thickness: AppDimens.borderWidthThin,
+            color: AppColors.surfaceContainerHigh,
+          ),
+          const SizedBox(height: AppDimens.spaceSm),
+
+          // Kotak-kotak saldo tiap dompet yang dapat digeser horizontal
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                for (final wallet in wallets) ...[
+                  Container(
+                    margin: const EdgeInsets.only(right: AppDimens.spaceSm),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppDimens.walletBoxPaddingH,
+                      vertical: AppDimens.walletBoxPaddingV,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceContainerLow,
+                      borderRadius: BorderRadius.circular(AppDimens.radiusLg),
+                      border: Border.all(
+                        color: AppColors.outlineVariant,
+                        width: AppDimens.borderWidthThin,
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          wallet.name,
+                          style: AppTypography.walletBoxName,
+                        ),
+                        const SizedBox(height: AppDimens.spaceXs),
+                        Text(
+                          FinanceCalculator.formatRupiah(
+                            walletBalances[wallet.id] ?? wallet.initialBalance,
+                          ),
+                          style: AppTypography.walletBoxBalance,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

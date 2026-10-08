@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../logic/finance_calculator.dart';
 import '../theme/app_theme.dart';
 
-// Header layar Buku Kas: judul editorial dan navigasi bulan sesuai design/buku_kas.html
+// Header layar Buku Kas: Judul layar 'Catatan Keuangan' dan navigasi bulan
 class BukuKasHeader extends StatelessWidget {
   final DateTime selectedMonth;
   final VoidCallback onPreviousMonth;
@@ -21,7 +21,7 @@ class BukuKasHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Bar atas: Judul editorial Buku Kas dan ikon gerigi Pengaturan
+        // Bar atas: Judul layar 'Catatan Keuangan' dan ikon gerigi Pengaturan
         Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(
@@ -32,7 +32,8 @@ class BukuKasHeader extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Buku Kas', style: AppTypography.headlineSmItalic),
+              const SizedBox(width: AppDimens.submitButtonHeight),
+              const Text('Catatan Keuangan', style: AppTypography.screenTitleSerif),
               IconButton(
                 key: const Key('settings_button'),
                 icon: const Icon(Icons.settings, size: AppDimens.iconMedium),
@@ -43,13 +44,11 @@ class BukuKasHeader extends StatelessWidget {
           ),
         ),
 
-        // Bar pemilih bulan (panah kiri, bulan & tahun, panah kanan)
-        Container(
-          width: double.infinity,
-          color: AppColors.surfaceContainerLow,
+        // Bar pemilih bulan (panah kiri, bulan & tahun sans-serif, panah kanan)
+        Padding(
           padding: const EdgeInsets.symmetric(
             horizontal: AppDimens.margin,
-            vertical: AppDimens.spaceSm,
+            vertical: AppDimens.spaceXs,
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -59,15 +58,9 @@ class BukuKasHeader extends StatelessWidget {
                 onPressed: onPreviousMonth,
                 tooltip: 'Bulan sebelumnya',
               ),
-              Column(
-                children: [
-                  Text(
-                    FinanceCalculator.formatMonthYear(selectedMonth),
-                    style: AppTypography.headlineSmItalic,
-                  ),
-                  const SizedBox(height: AppDimens.spaceXs / 2),
-                  const Text('BUKU UTAMA PRIBADI', style: AppTypography.labelCaps),
-                ],
+              Text(
+                FinanceCalculator.formatMonthYear(selectedMonth),
+                style: AppTypography.monthSelectorText,
               ),
               IconButton(
                 icon: const Icon(Icons.chevron_right, size: AppDimens.iconMedium),

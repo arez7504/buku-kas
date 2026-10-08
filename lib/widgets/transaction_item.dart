@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import '../logic/finance_calculator.dart';
 import '../models/transaction.dart';
+import '../theme/app_theme.dart';
 
-// TransactionItem: Komponen kartu baris untuk satu transaksi
+// TransactionItem: Komponen kartu baris untuk satu transaksi (kompatibilitas)
 class TransactionItem extends StatelessWidget {
   final Transaction transaction;
   final String walletName;
@@ -28,25 +29,33 @@ class TransactionItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    IconData icon;
-    Color color;
-    String prefix;
+    final IconData icon;
+    final Color iconColor;
+    final Color bgColor;
+    final String prefix;
+    final TextStyle amountStyle;
 
     switch (transaction.type) {
       case TransactionType.income:
         icon = Icons.arrow_downward;
-        color = Colors.green.shade700;
+        iconColor = AppColors.incomeGreen;
+        bgColor = AppColors.incomeGreenSoft;
         prefix = '+ ';
+        amountStyle = AppTypography.transactionAmountIncome;
         break;
       case TransactionType.expense:
         icon = Icons.arrow_upward;
-        color = Colors.red.shade700;
+        iconColor = AppColors.expenseRed;
+        bgColor = AppColors.expenseRedSoft;
         prefix = '- ';
+        amountStyle = AppTypography.transactionAmountExpense;
         break;
       case TransactionType.transfer:
         icon = Icons.swap_horiz;
-        color = Colors.blue.shade700;
+        iconColor = AppColors.transferBlue;
+        bgColor = AppColors.transferBlueSoft;
         prefix = '';
+        amountStyle = AppTypography.transactionAmountTransfer;
         break;
     }
 
@@ -54,43 +63,74 @@ class TransactionItem extends StatelessWidget {
         ? 'Transfer: $walletName ➔ ${targetWalletName ?? '-'}'
         : categoryName;
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
-      elevation: 0.8,
-      child: ListTile(
-        onTap: onTap,
-        leading: CircleAvatar(
-          backgroundColor: color.withValues(alpha: 0.12),
-          child: Icon(icon, color: color),
+    return Container(
+      margin: const EdgeInsets.symmetric(
+        horizontal: AppDimens.margin,
+        vertical: AppDimens.spaceXs,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(AppDimens.radiusXl),
+        border: Border.all(
+          color: AppColors.outlineVariant,
+          width: AppDimens.borderWidthThin,
         ),
-        title: Text(
-          titleText,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 4),
-            Text('${_formatDate(transaction.date)} • $walletName'),
-            if (transaction.note != null && transaction.note!.isNotEmpty) ...[
-              const SizedBox(height: 2),
-              Text(
-                transaction.note!,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey.shade600,
-                  fontStyle: FontStyle.italic,
+      ),
+      child: Material(
+        color: AppColors.transparent,
+        borderRadius: BorderRadius.circular(AppDimens.radiusXl),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppDimens.radiusXl),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(AppDimens.spaceMd),
+            child: Row(
+              children: [
+                Container(
+                  width: AppDimens.transactionBadgeSize,
+                  height: AppDimens.transactionBadgeSize,
+                  decoration: BoxDecoration(
+                    color: bgColor,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    icon,
+                    color: iconColor,
+                    size: AppDimens.iconMedium,
+                  ),
                 ),
-              ),
-            ],
-          ],
-        ),
-        trailing: Text(
-          '$prefix${FinanceCalculator.formatRupiah(transaction.amount)}',
-          style: TextStyle(
-            color: color,
-            fontWeight: FontWeight.bold,
-            fontSize: 14,
+                const SizedBox(width: AppDimens.spaceMd),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        titleText,
+                        style: AppTypography.transactionTitle,
+                      ),
+                      const SizedBox(height: AppDimens.spaceXs / 2),
+                      Text(
+                        '${_formatDate(transaction.date)} • $walletName',
+                        style: AppTypography.transactionSubtitle,
+                      ),
+                      if (transaction.note != null && transaction.note!.isNotEmpty) ...[
+                        const SizedBox(height: AppDimens.spaceXs / 4),
+                        Text(
+                          transaction.note!,
+                          style: AppTypography.transactionNote,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(width: AppDimens.spaceSm),
+                Text(
+                  '$prefix${FinanceCalculator.formatRupiah(transaction.amount)}',
+                  style: amountStyle,
+                ),
+              ],
+            ),
           ),
         ),
       ),

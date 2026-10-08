@@ -25,6 +25,12 @@ class AppColors {
   static const Color incomeGreen = Color(0xFF2E7D32);
   static const Color expenseRed = Color(0xFFC62828);
 
+  static const Color expenseRedSoft = Color(0xFFFDE8E8);
+  static const Color incomeGreenSoft = Color(0xFFE6F4EA);
+  static const Color transferBlue = Color(0xFF1565C0);
+  static const Color transferBlueSoft = Color(0xFFE8F0FE);
+  static const Color selisihTeal = Color(0xFF00695C);
+
   static const Color transparent = Colors.transparent;
 }
 
@@ -34,7 +40,7 @@ class AppFonts {
   static const String hankenGrotesk = 'HankenGrotesk';
 }
 
-// Tipografi terpusat sesuai design/catat.html
+// Tipografi terpusat sesuai design/catat.html dan revisi keterbacaan Buku Kas
 class AppTypography {
   static const TextStyle headlineHeroMobile = TextStyle(
     fontFamily: AppFonts.newsreader,
@@ -167,6 +173,163 @@ class AppTypography {
     fontSize: 1,
     color: AppColors.surface,
   );
+
+  // Tipografi Revisi Keterbacaan Buku Kas (Sans-serif untuk daftar & angka)
+  static const TextStyle screenTitleSerif = TextStyle(
+    fontFamily: AppFonts.newsreader,
+    fontSize: 22,
+    fontWeight: FontWeight.w600,
+    color: AppColors.onSurface,
+  );
+
+  static const TextStyle monthSelectorText = TextStyle(
+    fontFamily: AppFonts.hankenGrotesk,
+    fontSize: 18,
+    fontWeight: FontWeight.w700,
+    color: AppColors.onSurface,
+  );
+
+  static const TextStyle cardSectionTitle = TextStyle(
+    fontFamily: AppFonts.hankenGrotesk,
+    fontSize: 15,
+    fontWeight: FontWeight.w700,
+    color: AppColors.onSurface,
+  );
+
+  static const TextStyle sectionHeaderTitle = TextStyle(
+    fontFamily: AppFonts.hankenGrotesk,
+    fontSize: 18,
+    fontWeight: FontWeight.w700,
+    color: AppColors.onSurface,
+  );
+
+  static const TextStyle sectionHeaderCount = TextStyle(
+    fontFamily: AppFonts.hankenGrotesk,
+    fontSize: 13,
+    fontWeight: FontWeight.w500,
+    color: AppColors.onSurfaceVariant,
+  );
+
+  static const TextStyle walletBoxName = TextStyle(
+    fontFamily: AppFonts.hankenGrotesk,
+    fontSize: 13,
+    fontWeight: FontWeight.w500,
+    color: AppColors.onSurfaceVariant,
+  );
+
+  static const TextStyle walletBoxBalance = TextStyle(
+    fontFamily: AppFonts.hankenGrotesk,
+    fontSize: 15,
+    fontWeight: FontWeight.w700,
+    color: AppColors.onSurface,
+  );
+
+  static const TextStyle summaryColumnLabel = TextStyle(
+    fontFamily: AppFonts.hankenGrotesk,
+    fontSize: 13,
+    fontWeight: FontWeight.w500,
+    color: AppColors.onSurfaceVariant,
+  );
+
+  static const TextStyle summaryAmountIncome = TextStyle(
+    fontFamily: AppFonts.hankenGrotesk,
+    fontSize: 15,
+    fontWeight: FontWeight.w700,
+    color: AppColors.incomeGreen,
+  );
+
+  static const TextStyle summaryAmountExpense = TextStyle(
+    fontFamily: AppFonts.hankenGrotesk,
+    fontSize: 15,
+    fontWeight: FontWeight.w700,
+    color: AppColors.expenseRed,
+  );
+
+  static const TextStyle summaryAmountSelisih = TextStyle(
+    fontFamily: AppFonts.hankenGrotesk,
+    fontSize: 15,
+    fontWeight: FontWeight.w700,
+    color: AppColors.selisihTeal,
+  );
+
+  static const TextStyle transactionTitle = TextStyle(
+    fontFamily: AppFonts.hankenGrotesk,
+    fontSize: 16,
+    fontWeight: FontWeight.w600,
+    color: AppColors.onSurface,
+  );
+
+  static const TextStyle transactionSubtitle = TextStyle(
+    fontFamily: AppFonts.hankenGrotesk,
+    fontSize: 13,
+    fontWeight: FontWeight.w400,
+    color: AppColors.onSurfaceVariant,
+  );
+
+  static const TextStyle transactionNote = TextStyle(
+    fontFamily: AppFonts.hankenGrotesk,
+    fontSize: 13,
+    fontWeight: FontWeight.w400,
+    fontStyle: FontStyle.italic,
+    color: AppColors.onSurfaceVariant,
+  );
+
+  static const TextStyle transactionAmountExpense = TextStyle(
+    fontFamily: AppFonts.hankenGrotesk,
+    fontSize: 16,
+    fontWeight: FontWeight.w700,
+    color: AppColors.expenseRed,
+  );
+
+  static const TextStyle transactionAmountIncome = TextStyle(
+    fontFamily: AppFonts.hankenGrotesk,
+    fontSize: 16,
+    fontWeight: FontWeight.w700,
+    color: AppColors.incomeGreen,
+  );
+
+  static const TextStyle transactionAmountTransfer = TextStyle(
+    fontFamily: AppFonts.hankenGrotesk,
+    fontSize: 16,
+    fontWeight: FontWeight.w700,
+    color: AppColors.transferBlue,
+  );
+
+  static const TextStyle labelSmLink = TextStyle(
+    fontFamily: AppFonts.hankenGrotesk,
+    fontSize: 11,
+    fontWeight: FontWeight.w500,
+    color: AppColors.secondary,
+  );
+
+  static const TextStyle dayGroupHeaderDate = TextStyle(
+    fontFamily: AppFonts.hankenGrotesk,
+    fontSize: 12,
+    fontWeight: FontWeight.w700,
+    letterSpacing: 0.5,
+    color: AppColors.onSurfaceVariant,
+  );
+
+  static const TextStyle dayGroupSubtotalGreen = TextStyle(
+    fontFamily: AppFonts.hankenGrotesk,
+    fontSize: 13,
+    fontWeight: FontWeight.w600,
+    color: AppColors.incomeGreen,
+  );
+
+  static const TextStyle dayGroupSubtotalRed = TextStyle(
+    fontFamily: AppFonts.hankenGrotesk,
+    fontSize: 13,
+    fontWeight: FontWeight.w600,
+    color: AppColors.expenseRed,
+  );
+
+  static const TextStyle dayGroupSubtotalNeutral = TextStyle(
+    fontFamily: AppFonts.hankenGrotesk,
+    fontSize: 13,
+    fontWeight: FontWeight.w600,
+    color: AppColors.onSurfaceVariant,
+  );
 }
 
 // Ukuran, margin, padding, radius, dan dimensi terpusat
@@ -188,6 +351,7 @@ class AppDimens {
   static const double caretWidth = 2.0;
   static const double caretHeight = 32.0;
 
+  static const double iconTiny = 12.0;
   static const double iconSmall = 16.0;
   static const double iconMedium = 20.0;
   static const double iconLarge = 24.0;
@@ -199,6 +363,11 @@ class AppDimens {
   static const double bottomListPadding = 88.0;
   static const double expenseBarHeight = 8.0;
   static const double expenseBarTrackRadius = 4.0;
+
+  static const double transactionBadgeSize = 44.0;
+  static const double walletBoxPaddingH = 14.0;
+  static const double walletBoxPaddingV = 10.0;
+  static const double summaryCardPadding = 16.0;
 }
 
 // Konfigurasi ThemeData global

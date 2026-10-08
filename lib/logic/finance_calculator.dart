@@ -259,4 +259,122 @@ class FinanceCalculator {
       items: List.unmodifiable(items),
     );
   }
+
+  /// Mengelompokkan transaksi bulan terpilih per tanggal (tahun-bulan-hari, zona waktu perangkat).
+  /// Urut hari terbaru di atas. Di dalam satu hari, urut transaksi terbaru di atas.
+  /// Subtotal harian = total pemasukan dikurangi total pengeluaran hari itu.
+  /// Transfer TIDAK dihitung. Jika hari itu hanya berisi transfer, subtotal bernilai null.
+  static List<DailyTransactionGroup> groupTransactionsByDay(
+    List<Transaction> transactions,
+    int year,
+    int month,
+  ) {
+    // 1. Saring transaksi bulan terpilih berdasarkan waktu lokal perangkat
+    final monthlyTxs = transactions.where((t) {
+      final localDate = t.date.toLocal();
+      return localDate.year == year && localDate.month == month;
+    }).toList();
+
+    if (monthlyTxs.isEmpty) return [];
+
+    // 2. Kelompokkan per tanggal (Y-M-D)
+    final Map<DateTime, List<Transaction>> map = {};
+    for (final tx in monthlyTxs) {
+      final localDate = tx.date.toLocal();
+      final dayKey = DateTime(localDate.year, localDate.month, localDate.day);
+      map.putIfAbsent(dayKey, () => []).add(tx);
+    }
+
+    // 3. Urutkan hari terbaru di atas
+    final sortedDays = map.keys.toList()..sort((a, b) => b.compareTo(a));
+
+    final List<DailyTransactionGroup> result = [];
+    for (final day in sortedDays) {
+      final dayTxs = List<Transaction>.from(map[day]!);
+      // Di dalam satu hari, urut transaksi terbaru di atas
+      dayTxs.sort((a, b) => b.date.compareTo(a.date));
+
+      int income = 0;
+      int expense = 0;
+      bool hasCashflow = false;
+
+      for (final tx in dayTxs) {
+        if (tx.type == TransactionType.income) {
+          income += tx.amount;
+          hasCashflow = true;
+        } else if (tx.type == TransactionType.expense) {
+          expense += tx.amount;
+          hasCashflow = true;
+        }
+      }
+
+      final int? subtotal = hasCashflow ? (income - expense) : null;
+
+      result.add(DailyTransactionGroup(
+        date: day,
+        transactions: List.unmodifiable(dayTxs),
+        subtotal: subtotal,
+      ));
+    }
+
+    return List.unmodifiable(result);
+  }
+
+  /// Format judul tanggal kelompok transaksi:
+  /// - Hari ini: "HARI INI, 8 OKT 2026"
+  /// - Kemarin: "KEMARIN, 7 OKT 2026"
+  /// - Lainnya: "6 OKT 2026" (singkatan bulan Indonesia, huruf kapital)
+  static String formatDayGroupHeader(DateTime date, {DateTime? now}) {
+    final ref = (now ?? DateTime.now()).toLocal();
+    final localDate = date.toLocal();
+
+    final todayDate = DateTime(ref.year, ref.month, ref.day);
+    final targetDate = DateTime(localDate.year, localDate.month, localDate.day);
+    final yesterdayDate = DateTime(ref.year, ref.month, ref.day - 1);
+
+    final isToday = targetDate == todayDate;
+    final isYesterday = targetDate == yesterdayDate;
+
+    const months = [
+      'JAN', 'FEB', 'MAR', 'APR', 'MEI', 'JUN',
+      'JUL', 'AGU', 'SEP', 'OKT', 'NOV', 'DES'
+    ];
+    final monthStr = months[localDate.month - 1];
+    final dateStr = '${localDate.day} $monthStr ${localDate.year}';
+
+    if (isToday) return 'HARI INI, $dateStr';
+    if (isYesterday) return 'KEMARIN, $dateStr';
+    return dateStr;
+  }
+
+  /// Format teks subtotal harian:
+  /// - Positif: "+ Rp ..."
+  /// - Negatif: "- Rp ..."
+  /// - Nol: "Rp 0"
+  /// - Null: null
+  static String? formatDailySubtotal(int? subtotal) {
+    if (subtotal == null) return null;
+    if (subtotal > 0) {
+      return '+ ${formatRupiah(subtotal)}';
+    } else if (subtotal < 0) {
+      return '- ${formatRupiah(subtotal.abs())}';
+    } else {
+      return 'Rp 0';
+    }
+  }
+}
+
+/// Kelompok transaksi per hari dengan subtotal harian (pemasukan - pengeluaran)
+class DailyTransactionGroup {
+  final DateTime date;
+  final List<Transaction> transactions;
+  final int? subtotal; // null jika hari itu hanya berisi transfer
+
+  const DailyTransactionGroup({
+    required this.date,
+    required this.transactions,
+    required this.subtotal,
+  });
+
+  bool get hasSubtotal => subtotal != null;
 }
