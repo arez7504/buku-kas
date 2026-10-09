@@ -6,30 +6,36 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../logic/app_lock_manager.dart';
 import '../logic/backup_service.dart';
 import '../logic/finance_state.dart';
 import '../theme/app_theme.dart';
+import '../widgets/app_lock_scope.dart';
 import 'category_management_screen.dart';
 import 'wallet_management_screen.dart';
 
 /// Layar Pengaturan:
 /// - Kelola Dompet
 /// - Kelola Kategori
+/// - Kunci aplikasi (keamanan autentikasi biometrik / PIN / sandi)
 /// - Cadangkan data (ekspor ke JSON dan bagikan)
 /// - Pulihkan data (impor dari JSON dengan validasi & pratinjau ringkasan)
 class SettingsScreen extends StatelessWidget {
   final Future<void> Function(String fileName, String jsonString)? shareOverride;
   final Future<String?> Function()? filePickerOverride;
+  final AppLockManager? lockManagerOverride;
 
   const SettingsScreen({
     super.key,
     this.shareOverride,
     this.filePickerOverride,
+    this.lockManagerOverride,
   });
 
   @override
   Widget build(BuildContext context) {
     final state = FinanceScope.of(context);
+    final lockManager = lockManagerOverride ?? AppLockScope.maybeOf(context);
 
     return Scaffold(
       backgroundColor: AppColors.surface,
@@ -74,6 +80,9 @@ class SettingsScreen extends StatelessWidget {
               },
             ),
             const SizedBox(height: AppDimens.spaceLg),
+            _buildSectionHeader('Keamanan'),
+            _buildLockSwitchItem(context, lockManager),
+            const SizedBox(height: AppDimens.spaceLg),
             _buildSectionHeader('Cadangan & Pemulihan'),
             _buildMenuItem(
               context: context,
@@ -106,6 +115,80 @@ class SettingsScreen extends StatelessWidget {
           letterSpacing: 1.1,
           fontWeight: FontWeight.bold,
         ),
+      ),
+    );
+  }
+
+  Widget _buildLockSwitchItem(BuildContext context, AppLockManager? lockManager) {
+    final isEnabled = lockManager?.isEnabled ?? false;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(AppDimens.radiusDefault),
+        border: Border.all(
+          color: AppColors.outlineVariant,
+          width: AppDimens.borderWidthThin,
+        ),
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: AppDimens.spaceMd,
+          vertical: AppDimens.spaceXs,
+        ),
+        leading: Container(
+          padding: const EdgeInsets.all(AppDimens.spaceSm),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceContainerHigh,
+            borderRadius: BorderRadius.circular(AppDimens.radiusDefault),
+          ),
+          child: const Icon(
+            Icons.lock_outline,
+            color: AppColors.primary,
+            size: AppDimens.iconMedium,
+          ),
+        ),
+        title: Text(
+          'Kunci aplikasi',
+          style: AppTypography.bodyLg.copyWith(fontWeight: FontWeight.w600),
+        ),
+        subtitle: const Text(
+          'Minta autentikasi perangkat saat membuka aplikasi',
+          style: AppTypography.bodySm,
+        ),
+        trailing: Switch(
+          key: const Key('switch_kunci_aplikasi'),
+          value: isEnabled,
+          activeThumbColor: AppColors.primary,
+          onChanged: lockManager == null
+              ? null
+              : (value) async {
+                  final result = await lockManager.toggleLock(value);
+                  if (!context.mounted) return;
+                  if (!result.isSuccess && result.message != null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(result.message!),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  }
+                },
+        ),
+        onTap: lockManager == null
+            ? null
+            : () async {
+                final result = await lockManager.toggleLock(!isEnabled);
+                if (!context.mounted) return;
+                if (!result.isSuccess && result.message != null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(result.message!),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              },
       ),
     );
   }

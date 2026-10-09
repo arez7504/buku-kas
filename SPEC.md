@@ -198,6 +198,16 @@ Dokumen ini berisi spesifikasi kebutuhan minimal (Minimum Viable Product / MVP) 
      - Baris transaksi di dalam kelompok tidak lagi menampilkan tanggal (sudah terwakili pada judul), berformat flat tanpa kartu individual, dipisahkan garis tipis antar baris, dan tap tetap membuka form edit transaksi.
      - Invarian matematika: jumlah seluruh subtotal harian dalam satu bulan sama persis dengan nilai Selisih bulanan di kartu ringkasan.
 
+11. **Fitur Kunci Aplikasi (Keamanan Layar Kunci Perangkat):**
+    - Sakelar "Kunci aplikasi" di layar Pengaturan (bagian Keamanan), tersimpan permanen via `shared_preferences`.
+    - Wajib autentikasi perangkat (sidik jari/wajah, dengan cadangan PIN/pola/sandi) setiap kali dibuka dari kondisi tertutup (cold start), dan setiap kembali ke aplikasi setelah berada di latar belakang lebih dari 30 detik.
+    - Kembali dari latar belakang di bawah/sampai 30 detik tidak mengunci aplikasi, menjaga alur kerja pengguna tetap lancar.
+    - Mengaktifkan sakelar mewajibkan autentikasi berhasil terlebih dahulu. Mematikan sakelar juga mewajibkan autentikasi.
+    - Jika perangkat tidak memiliki layar kunci (PIN, pola, sandi, atau biometrik), sakelar tidak dapat diaktifkan dan menampilkan pesan penolakan yang jelas.
+    - Jika sakelar sudah aktif lalu layar kunci perangkat dihapus oleh pengguna di pengaturan OS, aplikasi tetap terbuka dan menampilkan satu banner pemberitahuan yang dapat ditutup, mencegah pengguna terkunci di luar datanya sendiri.
+    - Saat berstatus terkunci, seluruh isi aplikasi disembunyikan menggunakan `LockScreen` polos dengan tombol "Buka" (isi aplikasi tidak terlihat baik di layar utama maupun di tampilan aplikasi terbaru / Recent Apps).
+    - Arsitektur terisolasi: abstraksi `AppLockAuthService`, `AppLockStorage`, dan `AppLockManager` (`ChangeNotifier` & `WidgetsBindingObserver`) dipisahkan rapi dari UI untuk pengujian otomatis menggunakan fake/mock.
+
 ### B. Hal yang Belum Dikerjakan
 1. **Sinkronisasi Cloud & Enkripsi Cadangan:**
    - Sinkronisasi otomatis ke cloud dan enkripsi berkas cadangan (Tahap 2).
@@ -209,16 +219,34 @@ Dokumen ini berisi spesifikasi kebutuhan minimal (Minimum Viable Product / MVP) 
 - `drift_flutter: ^0.2.8` (konektivitas SQLite dan path resolver Flutter Android/iOS)
 - `share_plus: ^12.0.2` (membuka menu bagikan native Android/iOS untuk berkas cadangan tanpa izin penyimpanan khusus)
 - `file_picker: ^11.0.3` (memilih berkas JSON cadangan via Android Storage Access Framework tanpa izin penyimpanan khusus)
+- `local_auth: ^3.0.1` (autentikasi biometrik dan layar kunci perangkat Android/iOS)
+- `shared_preferences: ^2.5.4` (penyimpanan preferensi sederhana status sakelar kunci aplikasi)
 - `flutter_test` (Flutter SDK - dev dependency)
 - `flutter_lints: ^5.0.0` (analisis linter - dev dependency)
 - `drift_dev: ^2.31.0` (generator kode Drift - dev dependency)
 - `build_runner: ^2.15.1` (runner generator Dart - dev dependency)
 
 ### D. Hasil `flutter test` Terakhir
-- **Total Test:** 90
-- **Lulus:** 90 (100%)
+- **Total Test:** 104
+- **Lulus:** 104 (100%)
 - **Gagal:** 0
 - **Cakupan Pengujian:**
+  - `app_lock_test.dart` (9 test):
+    - (1) Sakelar aktif membuat aplikasi terkunci saat dibuka dari kondisi tertutup (cold start).
+    - (2) Autentikasi gagal: aplikasi tetap terkunci.
+    - (3) Autentikasi sukses: aplikasi berhasil dibuka.
+    - (4) Kembali dari latar belakang di bawah/sampai 30 detik (uji 25s dan 30s) tidak mengunci.
+    - (5) Kembali dari latar belakang di atas 30 detik (uji 31s) mengunci aplikasi.
+    - (6) Perangkat tanpa layar kunci tidak bisa mengaktifkan sakelar (menolak dan menampilkan alasan).
+    - (7) Mengaktifkan sakelar mewajibkan autentikasi berhasil dulu.
+    - (8) Mematikan sakelar mewajibkan autentikasi berhasil dulu.
+    - (9) Sakelar aktif lalu layar kunci dihapus dari OS: aplikasi tetap terbuka dan menampilkan pesan pemberitahuan.
+  - `app_lock_widget_test.dart` (5 test):
+    - (1) Saat terkunci, isi aplikasi tidak terlihat; menampilkan LockScreen polos dengan tombol "Buka".
+    - (2) Autentikasi gagal tetap menampilkan LockScreen; sukses membuka dan menampilkan isi aplikasi.
+    - (3) Layar Pengaturan memuat sakelar Kunci aplikasi; mengaktifkan & mematikan mewajibkan autentikasi.
+    - (4) Perangkat tanpa layar kunci: sakelar tidak bisa aktif dan menampilkan pesan SnackBar yang jelas.
+    - (5) Layar kunci perangkat dihapus saat sakelar aktif: aplikasi tetap terbuka dan menampilkan banner pemberitahuan yang dapat ditutup.
   - `daily_grouping_test.dart` (15 test):
     - (a) Pengelompokan harian: transaksi di dua hari berbeda menghasilkan dua kelompok urut terbaru di atas, urutan transaksi intraday terbaru di atas, kalkulasi subtotal harian (pemasukan - pengeluaran), pengecualian transfer dari subtotal harian, peniadaan subtotal untuk hari berisi transfer saja (`subtotal == null`), pelabelan "HARI INI, 8 OKT 2026", "KEMARIN, 7 OKT 2026", dan singkatan kapital baku bulan lainnya ("6 OKT 2026", "17 AGU 2026").
     - (b) Invarian matematika: verifikasi kesamaan jumlah seluruh subtotal harian satu bulan dengan Selisih bulanan di kartu ringkasan (`sum(dailySubtotals) == netCashFlow`), baik dalam kondisi selisih positif maupun negatif.
@@ -250,3 +278,6 @@ Dokumen ini berisi spesifikasi kebutuhan minimal (Minimum Viable Product / MVP) 
 8. **Animasi Kursor Kedip & Kompatibilitas Widget Test:** Kursor nominal berkedip setiap ~530 ms per fase dengan transisi halus `FadeTransition`. Siklus langsung di-reset dan kursor tampil penuh (opacity 1.0) setiap kali tombol keypad ditekan. Animasi dihentikan dan di-dispose saat layar ditutup, serta otomatis diam dan statis (opacity 1.0) saat pengaturan Android "kurangi animasi" (`disableAnimations`) aktif. Di lingkungan widget test otomatis, blinking dicegah agar `tester.pumpAndSettle()` pada suite pengujian umum tidak menggantung, sementara unit/widget test khusus kursor dapat menguji animasi secara terisolasi.
 9. **Skala Batang Rincian Pengeluaran:** Batang horizontal per kategori dinormalisasi terhadap nominal kategori pengeluaran terbesar pada bulan terpilih (`amount / maxAmount`), dengan lebar track dibatasi oleh margin standar aplikasi (`AppDimens.margin`) sehingga tidak meluap atau memenuhi 100% lebar layar.
 10. **Subtotal Harian & Pengecualian Transfer:** Subtotal harian pada judul kelompok semata-mata menghitung arus kas bersih (pemasukan - pengeluaran). Transaksi bertipe transfer tidak menambah maupun mengurangi subtotal harian dan tidak ditampilkan jika dalam satu hari hanya terdapat transaksi transfer. Jumlah seluruh subtotal harian satu bulan secara matematis selalu sama dengan nilai Selisih pada kartu ringkasan bulanan.
+11. **Penguncian Aplikasi & Timeout Latar Belakang:** Perhitungan timeout 30 detik diukur dari waktu aplikasi beralih ke status `paused`/`hidden` hingga `resumed`. Autentikasi biometrik menggunakan konfigurasi `biometricOnly: false` sehingga perangkat dapat menggunakan PIN, pola, atau sandi layar kunci sebagai cadangan resmi.
+12. **Perlindungan Tampilan Aplikasi Terbaru:** Saat terkunci, hierarki widget aplikasi dibungkus oleh `AppLockWrapper` yang menampilkan `LockScreen` polos dengan tombol "Buka" sehingga pratinjau snapshot sistem OS Android pada tampilan Recent Apps tidak membocorkan informasi finansial apa pun.
+13. **Penanganan Layar Kunci Dihapus:** Jika layar kunci perangkat dihapus setelah fitur aktif, sistem mendeteksi `isDeviceSupported() == false`, menjaga aplikasi tetap terbuka (`isLocked = false`) dan menampilkan banner peringatan di bagian atas layar agar pengguna tidak kehilangan akses terhadap datanya.
