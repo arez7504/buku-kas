@@ -13,33 +13,59 @@ class CatatTypeTabs extends StatelessWidget {
     required this.onTypeChanged,
   });
 
+  IconData _getIcon(TransactionType type) {
+    switch (type) {
+      case TransactionType.expense:
+        return Icons.arrow_downward;
+      case TransactionType.income:
+        return Icons.arrow_upward;
+      case TransactionType.transfer:
+        return Icons.sync_alt;
+    }
+  }
+
   Widget _buildTabItem(TransactionType type, String label) {
     final isSelected = selectedType == type;
 
-    return InkWell(
-      onTap: () => onTypeChanged(type),
-      splashColor: AppColors.transparent,
-      highlightColor: AppColors.transparent,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppDimens.spaceMd),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(bottom: AppDimens.spaceSm),
-              child: Text(
-                label,
-                style: isSelected
-                    ? AppTypography.labelMdActive
-                    : AppTypography.labelMdInactive,
+    return Expanded(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => onTypeChanged(type),
+          borderRadius: BorderRadius.circular(AppDimens.radiusFull),
+          splashColor: Colors.transparent,
+          highlightColor: Colors.transparent,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(vertical: AppDimens.spaceSm),
+            decoration: BoxDecoration(
+              gradient: isSelected ? AppGradients.catatTabActive : null,
+              color: isSelected ? null : Colors.transparent,
+              borderRadius: BorderRadius.circular(AppDimens.radiusFull),
+              boxShadow: isSelected ? AppShadows.catatTabActive : null,
+            ),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    _getIcon(type),
+                    size: 15,
+                    color: isSelected ? Colors.white : AppColors.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: AppDimens.spaceXs),
+                  Text(
+                    label,
+                    style: isSelected
+                        ? AppTypography.catatTabActive
+                        : AppTypography.catatTabInactive,
+                  ),
+                ],
               ),
             ),
-            Container(
-              height: AppDimens.borderWidthIndicator,
-              width: AppDimens.spaceXl,
-              color: isSelected ? AppColors.secondary : AppColors.transparent,
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -48,25 +74,22 @@ class CatatTypeTabs extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: AppColors.surface,
-      padding: const EdgeInsets.only(top: AppDimens.spaceXs),
-      child: Container(
-        decoration: const BoxDecoration(
-          border: Border(
-            bottom: BorderSide(
-              color: AppColors.surfaceContainerHigh,
-              width: AppDimens.borderWidthThin,
-            ),
-          ),
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppDimens.spaceXs),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(AppDimens.radiusFull),
+        border: Border.all(
+          color: AppColors.borderFaint,
+          width: AppDimens.borderWidthThin,
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _buildTabItem(TransactionType.expense, 'Pengeluaran'),
-            _buildTabItem(TransactionType.income, 'Pemasukan'),
-            _buildTabItem(TransactionType.transfer, 'Transfer'),
-          ],
-        ),
+      ),
+      child: Row(
+        children: [
+          _buildTabItem(TransactionType.expense, 'Pengeluaran'),
+          _buildTabItem(TransactionType.income, 'Pemasukan'),
+          _buildTabItem(TransactionType.transfer, 'Transfer'),
+        ],
       ),
     );
   }

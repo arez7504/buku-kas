@@ -25,6 +25,8 @@ class FinanceRepository {
             name: w.name,
             initialBalance: w.initialBalance,
             isArchived: w.isArchived,
+            iconKey: w.iconKey,
+            colorKey: w.colorKey,
           ),
         )
         .toList();
@@ -40,6 +42,8 @@ class FinanceRepository {
             name: c.name,
             type: c.type == 'income' ? CategoryType.income : CategoryType.expense,
             isArchived: c.isArchived,
+            iconKey: c.iconKey,
+            colorKey: c.colorKey,
           ),
         )
         .toList();
@@ -97,17 +101,21 @@ class FinanceRepository {
             name: wallet.name,
             initialBalance: Value(wallet.initialBalance),
             isArchived: Value(wallet.isArchived),
+            iconKey: Value(wallet.iconKey),
+            colorKey: Value(wallet.colorKey),
           ),
         );
   }
 
-  /// Memperbarui dompet yang ada di database (nama, saldo awal, atau status arsip)
+  /// Memperbarui dompet yang ada di database (nama, saldo awal, status arsip, iconKey, atau colorKey)
   Future<void> updateWallet(Wallet wallet) async {
     await (_db.update(_db.wallets)..where((w) => w.id.equals(wallet.id))).write(
           WalletsCompanion(
             name: Value(wallet.name),
             initialBalance: Value(wallet.initialBalance),
             isArchived: Value(wallet.isArchived),
+            iconKey: Value(wallet.iconKey),
+            colorKey: Value(wallet.colorKey),
           ),
         );
   }
@@ -133,17 +141,21 @@ class FinanceRepository {
             name: category.name,
             type: category.type == CategoryType.income ? 'income' : 'expense',
             isArchived: Value(category.isArchived),
+            iconKey: Value(category.iconKey),
+            colorKey: Value(category.colorKey),
           ),
         );
   }
 
-  /// Memperbarui kategori yang ada di database (nama atau status arsip)
+  /// Memperbarui kategori yang ada di database (nama, status arsip, iconKey, atau colorKey)
   Future<void> updateCategory(Category category) async {
     await (_db.update(_db.categories)..where((c) => c.id.equals(category.id))).write(
           CategoriesCompanion(
             name: Value(category.name),
             type: Value(category.type == CategoryType.income ? 'income' : 'expense'),
             isArchived: Value(category.isArchived),
+            iconKey: Value(category.iconKey),
+            colorKey: Value(category.colorKey),
           ),
         );
   }

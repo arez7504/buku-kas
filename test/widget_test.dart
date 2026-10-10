@@ -7,9 +7,9 @@ void main() {
     await tester.pumpWidget(const MyApp());
 
     // Memastikan elemen utama muncul
-    expect(find.text('Catatan Keuangan'), findsOneWidget);
-    expect(find.text('Saldo Dompet'), findsOneWidget);
-    expect(find.text('Riwayat Transaksi'), findsOneWidget);
+    expect(find.text('Buku Kas'), findsOneWidget);
+    expect(find.text('AKUN & DOMPET'), findsOneWidget);
+    expect(find.text('Transaksi Terkini'), findsOneWidget);
     expect(find.byType(FloatingActionButton), findsOneWidget);
   });
 

@@ -53,8 +53,37 @@ class $WalletsTable extends Wallets with TableInfo<$WalletsTable, DbWallet> {
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _iconKeyMeta = const VerificationMeta(
+    'iconKey',
+  );
   @override
-  List<GeneratedColumn> get $columns => [id, name, initialBalance, isArchived];
+  late final GeneratedColumn<String> iconKey = GeneratedColumn<String>(
+    'icon_key',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _colorKeyMeta = const VerificationMeta(
+    'colorKey',
+  );
+  @override
+  late final GeneratedColumn<String> colorKey = GeneratedColumn<String>(
+    'color_key',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    name,
+    initialBalance,
+    isArchived,
+    iconKey,
+    colorKey,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -95,6 +124,18 @@ class $WalletsTable extends Wallets with TableInfo<$WalletsTable, DbWallet> {
         isArchived.isAcceptableOrUnknown(data['is_archived']!, _isArchivedMeta),
       );
     }
+    if (data.containsKey('icon_key')) {
+      context.handle(
+        _iconKeyMeta,
+        iconKey.isAcceptableOrUnknown(data['icon_key']!, _iconKeyMeta),
+      );
+    }
+    if (data.containsKey('color_key')) {
+      context.handle(
+        _colorKeyMeta,
+        colorKey.isAcceptableOrUnknown(data['color_key']!, _colorKeyMeta),
+      );
+    }
     return context;
   }
 
@@ -120,6 +161,14 @@ class $WalletsTable extends Wallets with TableInfo<$WalletsTable, DbWallet> {
         DriftSqlType.bool,
         data['${effectivePrefix}is_archived'],
       )!,
+      iconKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}icon_key'],
+      ),
+      colorKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}color_key'],
+      ),
     );
   }
 
@@ -134,11 +183,15 @@ class DbWallet extends DataClass implements Insertable<DbWallet> {
   final String name;
   final int initialBalance;
   final bool isArchived;
+  final String? iconKey;
+  final String? colorKey;
   const DbWallet({
     required this.id,
     required this.name,
     required this.initialBalance,
     required this.isArchived,
+    this.iconKey,
+    this.colorKey,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -147,6 +200,12 @@ class DbWallet extends DataClass implements Insertable<DbWallet> {
     map['name'] = Variable<String>(name);
     map['initial_balance'] = Variable<int>(initialBalance);
     map['is_archived'] = Variable<bool>(isArchived);
+    if (!nullToAbsent || iconKey != null) {
+      map['icon_key'] = Variable<String>(iconKey);
+    }
+    if (!nullToAbsent || colorKey != null) {
+      map['color_key'] = Variable<String>(colorKey);
+    }
     return map;
   }
 
@@ -156,6 +215,12 @@ class DbWallet extends DataClass implements Insertable<DbWallet> {
       name: Value(name),
       initialBalance: Value(initialBalance),
       isArchived: Value(isArchived),
+      iconKey: iconKey == null && nullToAbsent
+          ? const Value.absent()
+          : Value(iconKey),
+      colorKey: colorKey == null && nullToAbsent
+          ? const Value.absent()
+          : Value(colorKey),
     );
   }
 
@@ -169,6 +234,8 @@ class DbWallet extends DataClass implements Insertable<DbWallet> {
       name: serializer.fromJson<String>(json['name']),
       initialBalance: serializer.fromJson<int>(json['initialBalance']),
       isArchived: serializer.fromJson<bool>(json['isArchived']),
+      iconKey: serializer.fromJson<String?>(json['iconKey']),
+      colorKey: serializer.fromJson<String?>(json['colorKey']),
     );
   }
   @override
@@ -179,6 +246,8 @@ class DbWallet extends DataClass implements Insertable<DbWallet> {
       'name': serializer.toJson<String>(name),
       'initialBalance': serializer.toJson<int>(initialBalance),
       'isArchived': serializer.toJson<bool>(isArchived),
+      'iconKey': serializer.toJson<String?>(iconKey),
+      'colorKey': serializer.toJson<String?>(colorKey),
     };
   }
 
@@ -187,11 +256,15 @@ class DbWallet extends DataClass implements Insertable<DbWallet> {
     String? name,
     int? initialBalance,
     bool? isArchived,
+    Value<String?> iconKey = const Value.absent(),
+    Value<String?> colorKey = const Value.absent(),
   }) => DbWallet(
     id: id ?? this.id,
     name: name ?? this.name,
     initialBalance: initialBalance ?? this.initialBalance,
     isArchived: isArchived ?? this.isArchived,
+    iconKey: iconKey.present ? iconKey.value : this.iconKey,
+    colorKey: colorKey.present ? colorKey.value : this.colorKey,
   );
   DbWallet copyWithCompanion(WalletsCompanion data) {
     return DbWallet(
@@ -203,6 +276,8 @@ class DbWallet extends DataClass implements Insertable<DbWallet> {
       isArchived: data.isArchived.present
           ? data.isArchived.value
           : this.isArchived,
+      iconKey: data.iconKey.present ? data.iconKey.value : this.iconKey,
+      colorKey: data.colorKey.present ? data.colorKey.value : this.colorKey,
     );
   }
 
@@ -212,13 +287,16 @@ class DbWallet extends DataClass implements Insertable<DbWallet> {
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('initialBalance: $initialBalance, ')
-          ..write('isArchived: $isArchived')
+          ..write('isArchived: $isArchived, ')
+          ..write('iconKey: $iconKey, ')
+          ..write('colorKey: $colorKey')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, name, initialBalance, isArchived);
+  int get hashCode =>
+      Object.hash(id, name, initialBalance, isArchived, iconKey, colorKey);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -226,7 +304,9 @@ class DbWallet extends DataClass implements Insertable<DbWallet> {
           other.id == this.id &&
           other.name == this.name &&
           other.initialBalance == this.initialBalance &&
-          other.isArchived == this.isArchived);
+          other.isArchived == this.isArchived &&
+          other.iconKey == this.iconKey &&
+          other.colorKey == this.colorKey);
 }
 
 class WalletsCompanion extends UpdateCompanion<DbWallet> {
@@ -234,12 +314,16 @@ class WalletsCompanion extends UpdateCompanion<DbWallet> {
   final Value<String> name;
   final Value<int> initialBalance;
   final Value<bool> isArchived;
+  final Value<String?> iconKey;
+  final Value<String?> colorKey;
   final Value<int> rowid;
   const WalletsCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
     this.initialBalance = const Value.absent(),
     this.isArchived = const Value.absent(),
+    this.iconKey = const Value.absent(),
+    this.colorKey = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   WalletsCompanion.insert({
@@ -247,6 +331,8 @@ class WalletsCompanion extends UpdateCompanion<DbWallet> {
     required String name,
     this.initialBalance = const Value.absent(),
     this.isArchived = const Value.absent(),
+    this.iconKey = const Value.absent(),
+    this.colorKey = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        name = Value(name);
@@ -255,6 +341,8 @@ class WalletsCompanion extends UpdateCompanion<DbWallet> {
     Expression<String>? name,
     Expression<int>? initialBalance,
     Expression<bool>? isArchived,
+    Expression<String>? iconKey,
+    Expression<String>? colorKey,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -262,6 +350,8 @@ class WalletsCompanion extends UpdateCompanion<DbWallet> {
       if (name != null) 'name': name,
       if (initialBalance != null) 'initial_balance': initialBalance,
       if (isArchived != null) 'is_archived': isArchived,
+      if (iconKey != null) 'icon_key': iconKey,
+      if (colorKey != null) 'color_key': colorKey,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -271,6 +361,8 @@ class WalletsCompanion extends UpdateCompanion<DbWallet> {
     Value<String>? name,
     Value<int>? initialBalance,
     Value<bool>? isArchived,
+    Value<String?>? iconKey,
+    Value<String?>? colorKey,
     Value<int>? rowid,
   }) {
     return WalletsCompanion(
@@ -278,6 +370,8 @@ class WalletsCompanion extends UpdateCompanion<DbWallet> {
       name: name ?? this.name,
       initialBalance: initialBalance ?? this.initialBalance,
       isArchived: isArchived ?? this.isArchived,
+      iconKey: iconKey ?? this.iconKey,
+      colorKey: colorKey ?? this.colorKey,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -297,6 +391,12 @@ class WalletsCompanion extends UpdateCompanion<DbWallet> {
     if (isArchived.present) {
       map['is_archived'] = Variable<bool>(isArchived.value);
     }
+    if (iconKey.present) {
+      map['icon_key'] = Variable<String>(iconKey.value);
+    }
+    if (colorKey.present) {
+      map['color_key'] = Variable<String>(colorKey.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -310,6 +410,8 @@ class WalletsCompanion extends UpdateCompanion<DbWallet> {
           ..write('name: $name, ')
           ..write('initialBalance: $initialBalance, ')
           ..write('isArchived: $isArchived, ')
+          ..write('iconKey: $iconKey, ')
+          ..write('colorKey: $colorKey, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -364,8 +466,37 @@ class $CategoriesTable extends Categories
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _iconKeyMeta = const VerificationMeta(
+    'iconKey',
+  );
   @override
-  List<GeneratedColumn> get $columns => [id, name, type, isArchived];
+  late final GeneratedColumn<String> iconKey = GeneratedColumn<String>(
+    'icon_key',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _colorKeyMeta = const VerificationMeta(
+    'colorKey',
+  );
+  @override
+  late final GeneratedColumn<String> colorKey = GeneratedColumn<String>(
+    'color_key',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    name,
+    type,
+    isArchived,
+    iconKey,
+    colorKey,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -405,6 +536,18 @@ class $CategoriesTable extends Categories
         isArchived.isAcceptableOrUnknown(data['is_archived']!, _isArchivedMeta),
       );
     }
+    if (data.containsKey('icon_key')) {
+      context.handle(
+        _iconKeyMeta,
+        iconKey.isAcceptableOrUnknown(data['icon_key']!, _iconKeyMeta),
+      );
+    }
+    if (data.containsKey('color_key')) {
+      context.handle(
+        _colorKeyMeta,
+        colorKey.isAcceptableOrUnknown(data['color_key']!, _colorKeyMeta),
+      );
+    }
     return context;
   }
 
@@ -430,6 +573,14 @@ class $CategoriesTable extends Categories
         DriftSqlType.bool,
         data['${effectivePrefix}is_archived'],
       )!,
+      iconKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}icon_key'],
+      ),
+      colorKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}color_key'],
+      ),
     );
   }
 
@@ -444,11 +595,15 @@ class DbCategory extends DataClass implements Insertable<DbCategory> {
   final String name;
   final String type;
   final bool isArchived;
+  final String? iconKey;
+  final String? colorKey;
   const DbCategory({
     required this.id,
     required this.name,
     required this.type,
     required this.isArchived,
+    this.iconKey,
+    this.colorKey,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -457,6 +612,12 @@ class DbCategory extends DataClass implements Insertable<DbCategory> {
     map['name'] = Variable<String>(name);
     map['type'] = Variable<String>(type);
     map['is_archived'] = Variable<bool>(isArchived);
+    if (!nullToAbsent || iconKey != null) {
+      map['icon_key'] = Variable<String>(iconKey);
+    }
+    if (!nullToAbsent || colorKey != null) {
+      map['color_key'] = Variable<String>(colorKey);
+    }
     return map;
   }
 
@@ -466,6 +627,12 @@ class DbCategory extends DataClass implements Insertable<DbCategory> {
       name: Value(name),
       type: Value(type),
       isArchived: Value(isArchived),
+      iconKey: iconKey == null && nullToAbsent
+          ? const Value.absent()
+          : Value(iconKey),
+      colorKey: colorKey == null && nullToAbsent
+          ? const Value.absent()
+          : Value(colorKey),
     );
   }
 
@@ -479,6 +646,8 @@ class DbCategory extends DataClass implements Insertable<DbCategory> {
       name: serializer.fromJson<String>(json['name']),
       type: serializer.fromJson<String>(json['type']),
       isArchived: serializer.fromJson<bool>(json['isArchived']),
+      iconKey: serializer.fromJson<String?>(json['iconKey']),
+      colorKey: serializer.fromJson<String?>(json['colorKey']),
     );
   }
   @override
@@ -489,6 +658,8 @@ class DbCategory extends DataClass implements Insertable<DbCategory> {
       'name': serializer.toJson<String>(name),
       'type': serializer.toJson<String>(type),
       'isArchived': serializer.toJson<bool>(isArchived),
+      'iconKey': serializer.toJson<String?>(iconKey),
+      'colorKey': serializer.toJson<String?>(colorKey),
     };
   }
 
@@ -497,11 +668,15 @@ class DbCategory extends DataClass implements Insertable<DbCategory> {
     String? name,
     String? type,
     bool? isArchived,
+    Value<String?> iconKey = const Value.absent(),
+    Value<String?> colorKey = const Value.absent(),
   }) => DbCategory(
     id: id ?? this.id,
     name: name ?? this.name,
     type: type ?? this.type,
     isArchived: isArchived ?? this.isArchived,
+    iconKey: iconKey.present ? iconKey.value : this.iconKey,
+    colorKey: colorKey.present ? colorKey.value : this.colorKey,
   );
   DbCategory copyWithCompanion(CategoriesCompanion data) {
     return DbCategory(
@@ -511,6 +686,8 @@ class DbCategory extends DataClass implements Insertable<DbCategory> {
       isArchived: data.isArchived.present
           ? data.isArchived.value
           : this.isArchived,
+      iconKey: data.iconKey.present ? data.iconKey.value : this.iconKey,
+      colorKey: data.colorKey.present ? data.colorKey.value : this.colorKey,
     );
   }
 
@@ -520,13 +697,16 @@ class DbCategory extends DataClass implements Insertable<DbCategory> {
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('type: $type, ')
-          ..write('isArchived: $isArchived')
+          ..write('isArchived: $isArchived, ')
+          ..write('iconKey: $iconKey, ')
+          ..write('colorKey: $colorKey')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, name, type, isArchived);
+  int get hashCode =>
+      Object.hash(id, name, type, isArchived, iconKey, colorKey);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -534,7 +714,9 @@ class DbCategory extends DataClass implements Insertable<DbCategory> {
           other.id == this.id &&
           other.name == this.name &&
           other.type == this.type &&
-          other.isArchived == this.isArchived);
+          other.isArchived == this.isArchived &&
+          other.iconKey == this.iconKey &&
+          other.colorKey == this.colorKey);
 }
 
 class CategoriesCompanion extends UpdateCompanion<DbCategory> {
@@ -542,12 +724,16 @@ class CategoriesCompanion extends UpdateCompanion<DbCategory> {
   final Value<String> name;
   final Value<String> type;
   final Value<bool> isArchived;
+  final Value<String?> iconKey;
+  final Value<String?> colorKey;
   final Value<int> rowid;
   const CategoriesCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
     this.type = const Value.absent(),
     this.isArchived = const Value.absent(),
+    this.iconKey = const Value.absent(),
+    this.colorKey = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   CategoriesCompanion.insert({
@@ -555,6 +741,8 @@ class CategoriesCompanion extends UpdateCompanion<DbCategory> {
     required String name,
     required String type,
     this.isArchived = const Value.absent(),
+    this.iconKey = const Value.absent(),
+    this.colorKey = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        name = Value(name),
@@ -564,6 +752,8 @@ class CategoriesCompanion extends UpdateCompanion<DbCategory> {
     Expression<String>? name,
     Expression<String>? type,
     Expression<bool>? isArchived,
+    Expression<String>? iconKey,
+    Expression<String>? colorKey,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -571,6 +761,8 @@ class CategoriesCompanion extends UpdateCompanion<DbCategory> {
       if (name != null) 'name': name,
       if (type != null) 'type': type,
       if (isArchived != null) 'is_archived': isArchived,
+      if (iconKey != null) 'icon_key': iconKey,
+      if (colorKey != null) 'color_key': colorKey,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -580,6 +772,8 @@ class CategoriesCompanion extends UpdateCompanion<DbCategory> {
     Value<String>? name,
     Value<String>? type,
     Value<bool>? isArchived,
+    Value<String?>? iconKey,
+    Value<String?>? colorKey,
     Value<int>? rowid,
   }) {
     return CategoriesCompanion(
@@ -587,6 +781,8 @@ class CategoriesCompanion extends UpdateCompanion<DbCategory> {
       name: name ?? this.name,
       type: type ?? this.type,
       isArchived: isArchived ?? this.isArchived,
+      iconKey: iconKey ?? this.iconKey,
+      colorKey: colorKey ?? this.colorKey,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -606,6 +802,12 @@ class CategoriesCompanion extends UpdateCompanion<DbCategory> {
     if (isArchived.present) {
       map['is_archived'] = Variable<bool>(isArchived.value);
     }
+    if (iconKey.present) {
+      map['icon_key'] = Variable<String>(iconKey.value);
+    }
+    if (colorKey.present) {
+      map['color_key'] = Variable<String>(colorKey.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -619,6 +821,8 @@ class CategoriesCompanion extends UpdateCompanion<DbCategory> {
           ..write('name: $name, ')
           ..write('type: $type, ')
           ..write('isArchived: $isArchived, ')
+          ..write('iconKey: $iconKey, ')
+          ..write('colorKey: $colorKey, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -1171,6 +1375,8 @@ typedef $$WalletsTableCreateCompanionBuilder =
       required String name,
       Value<int> initialBalance,
       Value<bool> isArchived,
+      Value<String?> iconKey,
+      Value<String?> colorKey,
       Value<int> rowid,
     });
 typedef $$WalletsTableUpdateCompanionBuilder =
@@ -1179,6 +1385,8 @@ typedef $$WalletsTableUpdateCompanionBuilder =
       Value<String> name,
       Value<int> initialBalance,
       Value<bool> isArchived,
+      Value<String?> iconKey,
+      Value<String?> colorKey,
       Value<int> rowid,
     });
 
@@ -1252,6 +1460,16 @@ class $$WalletsTableFilterComposer
 
   ColumnFilters<bool> get isArchived => $composableBuilder(
     column: $table.isArchived,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get iconKey => $composableBuilder(
+    column: $table.iconKey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get colorKey => $composableBuilder(
+    column: $table.colorKey,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -1334,6 +1552,16 @@ class $$WalletsTableOrderingComposer
     column: $table.isArchived,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get iconKey => $composableBuilder(
+    column: $table.iconKey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get colorKey => $composableBuilder(
+    column: $table.colorKey,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$WalletsTableAnnotationComposer
@@ -1360,6 +1588,12 @@ class $$WalletsTableAnnotationComposer
     column: $table.isArchived,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get iconKey =>
+      $composableBuilder(column: $table.iconKey, builder: (column) => column);
+
+  GeneratedColumn<String> get colorKey =>
+      $composableBuilder(column: $table.colorKey, builder: (column) => column);
 
   Expression<T> sourceTransactions<T extends Object>(
     Expression<T> Function($$TransactionsTableAnnotationComposer a) f,
@@ -1447,12 +1681,16 @@ class $$WalletsTableTableManager
                 Value<String> name = const Value.absent(),
                 Value<int> initialBalance = const Value.absent(),
                 Value<bool> isArchived = const Value.absent(),
+                Value<String?> iconKey = const Value.absent(),
+                Value<String?> colorKey = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => WalletsCompanion(
                 id: id,
                 name: name,
                 initialBalance: initialBalance,
                 isArchived: isArchived,
+                iconKey: iconKey,
+                colorKey: colorKey,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -1461,12 +1699,16 @@ class $$WalletsTableTableManager
                 required String name,
                 Value<int> initialBalance = const Value.absent(),
                 Value<bool> isArchived = const Value.absent(),
+                Value<String?> iconKey = const Value.absent(),
+                Value<String?> colorKey = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => WalletsCompanion.insert(
                 id: id,
                 name: name,
                 initialBalance: initialBalance,
                 isArchived: isArchived,
+                iconKey: iconKey,
+                colorKey: colorKey,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -1558,6 +1800,8 @@ typedef $$CategoriesTableCreateCompanionBuilder =
       required String name,
       required String type,
       Value<bool> isArchived,
+      Value<String?> iconKey,
+      Value<String?> colorKey,
       Value<int> rowid,
     });
 typedef $$CategoriesTableUpdateCompanionBuilder =
@@ -1566,6 +1810,8 @@ typedef $$CategoriesTableUpdateCompanionBuilder =
       Value<String> name,
       Value<String> type,
       Value<bool> isArchived,
+      Value<String?> iconKey,
+      Value<String?> colorKey,
       Value<int> rowid,
     });
 
@@ -1624,6 +1870,16 @@ class $$CategoriesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get iconKey => $composableBuilder(
+    column: $table.iconKey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get colorKey => $composableBuilder(
+    column: $table.colorKey,
+    builder: (column) => ColumnFilters(column),
+  );
+
   Expression<bool> transactionsRefs(
     Expression<bool> Function($$TransactionsTableFilterComposer f) f,
   ) {
@@ -1678,6 +1934,16 @@ class $$CategoriesTableOrderingComposer
     column: $table.isArchived,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get iconKey => $composableBuilder(
+    column: $table.iconKey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get colorKey => $composableBuilder(
+    column: $table.colorKey,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$CategoriesTableAnnotationComposer
@@ -1702,6 +1968,12 @@ class $$CategoriesTableAnnotationComposer
     column: $table.isArchived,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get iconKey =>
+      $composableBuilder(column: $table.iconKey, builder: (column) => column);
+
+  GeneratedColumn<String> get colorKey =>
+      $composableBuilder(column: $table.colorKey, builder: (column) => column);
 
   Expression<T> transactionsRefs<T extends Object>(
     Expression<T> Function($$TransactionsTableAnnotationComposer a) f,
@@ -1761,12 +2033,16 @@ class $$CategoriesTableTableManager
                 Value<String> name = const Value.absent(),
                 Value<String> type = const Value.absent(),
                 Value<bool> isArchived = const Value.absent(),
+                Value<String?> iconKey = const Value.absent(),
+                Value<String?> colorKey = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CategoriesCompanion(
                 id: id,
                 name: name,
                 type: type,
                 isArchived: isArchived,
+                iconKey: iconKey,
+                colorKey: colorKey,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -1775,12 +2051,16 @@ class $$CategoriesTableTableManager
                 required String name,
                 required String type,
                 Value<bool> isArchived = const Value.absent(),
+                Value<String?> iconKey = const Value.absent(),
+                Value<String?> colorKey = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CategoriesCompanion.insert(
                 id: id,
                 name: name,
                 type: type,
                 isArchived: isArchived,
+                iconKey: iconKey,
+                colorKey: colorKey,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

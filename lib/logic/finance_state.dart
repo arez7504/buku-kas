@@ -394,6 +394,13 @@ class FinanceState extends ChangeNotifier {
     return match.isNotEmpty ? match.first.name : 'Tanpa Kategori';
   }
 
+  /// Helper untuk mengambil kategori dari ID
+  Category? getCategoryById(String? categoryId) {
+    if (categoryId == null) return null;
+    final match = _categories.where((c) => c.id == categoryId);
+    return match.isNotEmpty ? match.first : null;
+  }
+
   /// Mengambil daftar kategori yang cocok dengan tipe transaksi (opsi penyaringan arsip)
   List<Category> getCategoriesByType(TransactionType type, {bool includeArchived = false}) {
     if (type == TransactionType.transfer) return [];
@@ -417,5 +424,10 @@ class FinanceScope extends InheritedNotifier<FinanceState> {
     final scope = context.dependOnInheritedWidgetOfExactType<FinanceScope>();
     assert(scope != null, 'FinanceScope tidak ditemukan di BuildContext');
     return scope!.notifier!;
+  }
+
+  static FinanceState? maybeOf(BuildContext context) {
+    final scope = context.dependOnInheritedWidgetOfExactType<FinanceScope>();
+    return scope?.notifier;
   }
 }

@@ -102,6 +102,7 @@ class _ExpenseBreakdownScreenState extends State<ExpenseBreakdownScreen> {
                 for (int i = 0; i < breakdown.items.length; i++) ...[
                   ExpenseCategoryRow(
                     item: breakdown.items[i],
+                    category: state.getCategoryById(breakdown.items[i].categoryId),
                     maxAmount: maxAmount,
                   ),
                   if (i < breakdown.items.length - 1)

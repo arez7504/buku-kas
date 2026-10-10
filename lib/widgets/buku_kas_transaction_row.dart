@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import '../logic/finance_calculator.dart';
+import '../models/category.dart';
 import '../models/transaction.dart';
 import '../theme/app_theme.dart';
+import '../theme/category_style.dart';
 
-// Baris transaksi individual: baris flat dengan ikon bulat berwarna di kiri sesuai tipe
+/// Baris transaksi individual di dalam kelompok harian
 class BukuKasTransactionRow extends StatelessWidget {
   final Transaction transaction;
   final String walletName;
   final String? targetWalletName;
   final String categoryName;
+  final Category? category;
   final VoidCallback onTap;
 
   const BukuKasTransactionRow({
@@ -17,110 +20,124 @@ class BukuKasTransactionRow extends StatelessWidget {
     required this.walletName,
     this.targetWalletName,
     required this.categoryName,
+    this.category,
     required this.onTap,
   });
 
+  String _formatSubtitle() {
+    final hasMeaningfulTime =
+        transaction.date.hour != 0 || transaction.date.minute != 0;
+    if (hasMeaningfulTime) {
+      final hour = transaction.date.hour.toString().padLeft(2, '0');
+      final minute = transaction.date.minute.toString().padLeft(2, '0');
+      return '$walletName • $hour:$minute';
+    }
+    return walletName;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final IconData badgeIcon;
-    final Color badgeIconColor;
-    final Color badgeBgColor;
-    final String amountPrefix;
-    final TextStyle amountStyle;
+    final iconStyle = CategoryStyleRegistry.resolveCategoryStyle(
+      category: category,
+      categoryName: categoryName,
+      transactionType: transaction.type,
+    );
 
+    final titleText = transaction.note != null &&
+            transaction.note!.trim().isNotEmpty
+        ? transaction.note!.trim()
+        : (transaction.type == TransactionType.transfer
+            ? 'Transfer: $walletName → ${targetWalletName ?? '-'}'
+            : (categoryName.isNotEmpty ? categoryName : 'Lainnya'));
+
+    final String amountText;
+    final TextStyle amountStyle;
     switch (transaction.type) {
       case TransactionType.expense:
-        badgeIcon = Icons.arrow_upward;
-        badgeIconColor = AppColors.expenseRed;
-        badgeBgColor = AppColors.expenseRedSoft;
-        amountPrefix = '- ';
+        amountText = '- ${FinanceCalculator.formatRupiah(transaction.amount)}';
         amountStyle = AppTypography.transactionAmountExpense;
         break;
       case TransactionType.income:
-        badgeIcon = Icons.arrow_downward;
-        badgeIconColor = AppColors.incomeGreen;
-        badgeBgColor = AppColors.incomeGreenSoft;
-        amountPrefix = '+ ';
+        amountText = '+ ${FinanceCalculator.formatRupiah(transaction.amount)}';
         amountStyle = AppTypography.transactionAmountIncome;
         break;
       case TransactionType.transfer:
-        badgeIcon = Icons.swap_horiz;
-        badgeIconColor = AppColors.transferBlue;
-        badgeBgColor = AppColors.transferBlueSoft;
-        amountPrefix = '';
-        amountStyle = AppTypography.transactionAmountTransfer;
+        amountText = FinanceCalculator.formatRupiah(transaction.amount);
+        amountStyle = AppTypography.transactionAmountNeutral;
         break;
     }
 
-    final titleText = transaction.type == TransactionType.transfer
-        ? 'Transfer: $walletName ➔ ${targetWalletName ?? '-'}'
-        : (categoryName.isNotEmpty ? categoryName : 'Lainnya');
+    final categoryBadge = transaction.type == TransactionType.transfer
+        ? 'TRANSFER'
+        : (categoryName.isNotEmpty ? categoryName.toUpperCase() : 'LAINNYA');
 
-    // Subtitle hanya menampilkan nama dompet karena tanggal sudah tertera di judul kelompok
-    final subtitleText = walletName;
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppDimens.spaceMd,
+          vertical: AppDimens.spaceSm + 2,
+        ),
+        child: Row(
+          children: [
+            // Kotak ikon kategori bertint
+            Container(
+              width: AppDimens.transactionBadgeSize,
+              height: AppDimens.transactionBadgeSize,
+              decoration: BoxDecoration(
+                color: iconStyle.backgroundColor,
+                border: Border.all(color: iconStyle.borderColor),
+                borderRadius: BorderRadius.circular(AppDimens.radiusLg),
+              ),
+              child: Icon(
+                iconStyle.icon,
+                size: AppDimens.iconMedium,
+                color: iconStyle.iconColor,
+              ),
+            ),
+            const SizedBox(width: AppDimens.spaceMd),
 
-    return Material(
-      color: AppColors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppDimens.margin,
-            vertical: AppDimens.spaceMd - 2,
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // Ikon bulat berwarna di kiri sesuai tipe
-              Container(
-                width: AppDimens.transactionBadgeSize,
-                height: AppDimens.transactionBadgeSize,
-                decoration: BoxDecoration(
-                  color: badgeBgColor,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  badgeIcon,
-                  color: badgeIconColor,
-                  size: AppDimens.iconMedium,
-                ),
+            // Judul dan nama dompet / jam
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    titleText,
+                    style: AppTypography.transactionTitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: AppDimens.spaceXs / 2),
+                  Text(
+                    _formatSubtitle(),
+                    style: AppTypography.transactionSubtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ),
-              const SizedBox(width: AppDimens.spaceMd),
-              // Informasi teks transaksi di tengah (teks utama >= 16 sp, pendukung >= 13 sp)
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      titleText,
-                      style: AppTypography.transactionTitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: AppDimens.spaceXs / 2),
-                    Text(
-                      subtitleText,
-                      style: AppTypography.transactionSubtitle,
-                    ),
-                    if (transaction.note != null && transaction.note!.trim().isNotEmpty) ...[
-                      const SizedBox(height: AppDimens.spaceXs / 4),
-                      Text(
-                        transaction.note!.trim(),
-                        style: AppTypography.transactionNote,
-                      ),
-                    ],
-                  ],
+            ),
+            const SizedBox(width: AppDimens.spaceSm),
+
+            // Nominal angka dan kategori huruf kapital kecil di kanan
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  amountText,
+                  style: amountStyle,
                 ),
-              ),
-              const SizedBox(width: AppDimens.spaceSm),
-              // Nominal angka di kanan dalam sans-serif
-              Text(
-                '$amountPrefix${FinanceCalculator.formatRupiah(transaction.amount)}',
-                style: amountStyle,
-              ),
-            ],
-          ),
+                const SizedBox(height: AppDimens.spaceXs / 2),
+                Text(
+                  categoryBadge,
+                  style: AppTypography.transactionCategoryBadge,
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );

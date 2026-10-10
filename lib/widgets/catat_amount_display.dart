@@ -129,59 +129,81 @@ class _CatatAmountDisplayState extends State<CatatAmountDisplay>
 
     return Container(
       width: double.infinity,
-      color: AppColors.surfaceContainerLowest,
       padding: const EdgeInsets.symmetric(
-        horizontal: AppDimens.margin,
+        horizontal: AppDimens.spaceMd,
         vertical: AppDimens.spaceMd,
+      ),
+      decoration: BoxDecoration(
+        gradient: AppGradients.catatAmountCard,
+        borderRadius: BorderRadius.circular(AppDimens.radiusXl),
+        border: Border.all(
+          color: AppColors.catatCardBorder,
+          width: AppDimens.borderWidthThin,
+        ),
+        boxShadow: AppShadows.catatAmountCard,
       ),
       child: Column(
         children: [
-          Text(_getLabelText(), style: AppTypography.labelCaps),
+          Text(_getLabelText(), style: AppTypography.catatNominalLabel),
           const SizedBox(height: AppDimens.spaceXs),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
             children: [
-              const Text('Rp ', style: AppTypography.amountPrefix),
-              Text(widget.formattedAmount, style: AppTypography.headlineHeroMobile),
-              FadeTransition(
-                key: const Key('catat_cursor_fade'),
-                opacity: shouldBlink
-                    ? _opacityAnimation
-                    : const AlwaysStoppedAnimation<double>(1.0),
-                child: Container(
-                  width: AppDimens.caretWidth,
-                  height: AppDimens.caretHeight,
-                  margin: const EdgeInsets.only(left: AppDimens.spaceXs),
-                  color: AppColors.secondary,
-                ),
+              const Text('Rp', style: AppTypography.catatAmountPrefix),
+              const SizedBox(width: AppDimens.spaceXs + 2),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(widget.formattedAmount, style: AppTypography.catatAmount),
+                  FadeTransition(
+                    key: const Key('catat_cursor_fade'),
+                    opacity: shouldBlink
+                        ? _opacityAnimation
+                        : const AlwaysStoppedAnimation<double>(1.0),
+                    child: Container(
+                      width: 3.0,
+                      height: 28.0,
+                      margin: const EdgeInsets.only(left: 4.0),
+                      decoration: BoxDecoration(
+                        gradient: AppGradients.catatCursor,
+                        borderRadius: BorderRadius.circular(AppDimens.radiusFull),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-          const SizedBox(height: AppDimens.spaceSm),
+          const SizedBox(height: AppDimens.spaceSm + 2),
           InkWell(
             onTap: widget.onDateTap,
             borderRadius: BorderRadius.circular(AppDimens.radiusFull),
             child: Container(
               padding: const EdgeInsets.symmetric(
-                horizontal: AppDimens.spaceMd,
+                horizontal: AppDimens.spaceMd - AppDimens.spaceXs,
                 vertical: AppDimens.spaceXs,
               ),
               decoration: BoxDecoration(
-                color: AppColors.surfaceContainerLow,
+                color: AppColors.catatDateChipBg,
                 borderRadius: BorderRadius.circular(AppDimens.radiusFull),
+                border: Border.all(
+                  color: AppColors.catatDateChipBorder,
+                  width: AppDimens.borderWidthThin,
+                ),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const Icon(
                     Icons.calendar_today,
-                    size: AppDimens.iconSmall,
-                    color: AppColors.onSurfaceVariant,
+                    size: 14,
+                    color: AppColors.secondary,
                   ),
-                  const SizedBox(width: AppDimens.spaceXs),
-                  Text(widget.dateText, style: AppTypography.bodySm),
+                  const SizedBox(width: AppDimens.spaceXs + 2),
+                  Text(widget.dateText, style: AppTypography.catatDateChip),
                 ],
               ),
             ),

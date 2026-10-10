@@ -11,15 +11,17 @@ import '../logic/backup_service.dart';
 import '../logic/finance_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_lock_scope.dart';
+import '../widgets/restore_preview_dialog.dart';
+import '../widgets/settings_group_card.dart';
+import '../widgets/settings_item_tile.dart';
+import '../widgets/settings_switch_tile.dart';
 import 'category_management_screen.dart';
 import 'wallet_management_screen.dart';
 
-/// Layar Pengaturan:
-/// - Kelola Dompet
-/// - Kelola Kategori
-/// - Kunci aplikasi (keamanan autentikasi biometrik / PIN / sandi)
-/// - Cadangkan data (ekspor ke JSON dan bagikan)
-/// - Pulihkan data (impor dari JSON dengan validasi & pratinjau ringkasan)
+/// Layar Pengaturan sesuai spesifikasi visual Milestone UI-5:
+/// - Master Data: Kelola Dompet, Kelola Kategori
+/// - Keamanan: Kunci aplikasi (autentikasi perangkat)
+/// - Cadangan & Pemulihan: Cadangkan data, Pulihkan data
 class SettingsScreen extends StatelessWidget {
   final Future<void> Function(String fileName, String jsonString)? shareOverride;
   final Future<String?> Function()? filePickerOverride;
@@ -36,11 +38,13 @@ class SettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final state = FinanceScope.of(context);
     final lockManager = lockManagerOverride ?? AppLockScope.maybeOf(context);
+    final isLockedEnabled = lockManager?.isEnabled ?? false;
 
     return Scaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Pengaturan', style: AppTypography.headlineSm),
+        centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, size: AppDimens.iconMedium),
           onPressed: () => Navigator.pop(context),
@@ -53,51 +57,83 @@ class SettingsScreen extends StatelessWidget {
             vertical: AppDimens.spaceMd,
           ),
           children: [
-            _buildSectionHeader('Master Data'),
-            _buildMenuItem(
-              context: context,
-              title: 'Kelola Dompet',
-              subtitle: 'Daftar dompet, saldo awal, dan pengarsipan',
-              icon: Icons.account_balance_wallet_outlined,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const WalletManagementScreen()),
-                );
-              },
-            ),
-            const SizedBox(height: AppDimens.spaceSm),
-            _buildMenuItem(
-              context: context,
-              title: 'Kelola Kategori',
-              subtitle: 'Kategori pemasukan dan pengeluaran',
-              icon: Icons.category_outlined,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const CategoryManagementScreen()),
-                );
-              },
+            SettingsGroupCard(
+              title: 'Master Data',
+              children: [
+                SettingsItemTile(
+                  title: 'Kelola Dompet',
+                  subtitle: 'Daftar dompet, saldo awal, dan pengarsipan',
+                  icon: Icons.account_balance_wallet,
+                  iconGradient: AppGradients.settingsWalletIcon,
+                  iconShadow: AppShadows.settingsIconPurple,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const WalletManagementScreen()),
+                    );
+                  },
+                ),
+                const Divider(height: 1, thickness: 1, color: AppColors.borderFaint),
+                SettingsItemTile(
+                  title: 'Kelola Kategori',
+                  subtitle: 'Kategori pemasukan dan pengeluaran',
+                  icon: Icons.category,
+                  iconGradient: AppGradients.settingsCategoryIcon,
+                  iconShadow: AppShadows.settingsIconCyan,
+                  iconColor: const Color(0xFF021B24),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const CategoryManagementScreen()),
+                    );
+                  },
+                ),
+              ],
             ),
             const SizedBox(height: AppDimens.spaceLg),
-            _buildSectionHeader('Keamanan'),
-            _buildLockSwitchItem(context, lockManager),
-            const SizedBox(height: AppDimens.spaceLg),
-            _buildSectionHeader('Cadangan & Pemulihan'),
-            _buildMenuItem(
-              context: context,
-              title: 'Cadangkan data',
-              subtitle: 'Simpan file JSON ke penyimpanan atau bagikan',
-              icon: Icons.cloud_upload_outlined,
-              onTap: () => _handleBackup(context, state),
+            SettingsGroupCard(
+              title: 'Keamanan',
+              children: [
+                SettingsSwitchTile(
+                  title: 'Kunci aplikasi',
+                  subtitle: 'Minta autentikasi perangkat saat membuka aplikasi',
+                  icon: Icons.lock,
+                  iconGradient: AppGradients.settingsSecurityIcon,
+                  iconShadow: AppShadows.settingsIconAmber,
+                  value: isLockedEnabled,
+                  switchKey: const Key('switch_kunci_aplikasi'),
+                  onChanged: lockManager == null
+                      ? null
+                      : (val) => _handleToggleLock(context, lockManager, val),
+                  onTap: lockManager == null
+                      ? null
+                      : () => _handleToggleLock(context, lockManager, !isLockedEnabled),
+                ),
+              ],
             ),
-            const SizedBox(height: AppDimens.spaceSm),
-            _buildMenuItem(
-              context: context,
-              title: 'Pulihkan data',
-              subtitle: 'Ganti seluruh data dari berkas cadangan JSON',
-              icon: Icons.settings_backup_restore_outlined,
-              onTap: () => _handleRestore(context, state),
+            const SizedBox(height: AppDimens.spaceLg),
+            SettingsGroupCard(
+              title: 'Cadangan & Pemulihan',
+              children: [
+                SettingsItemTile(
+                  title: 'Cadangkan data',
+                  subtitle: 'Simpan file JSON ke penyimpanan atau bagikan',
+                  icon: Icons.cloud_upload,
+                  iconGradient: AppGradients.settingsBackupIcon,
+                  iconShadow: AppShadows.settingsIconTeal,
+                  iconColor: const Color(0xFF021B24),
+                  onTap: () => _handleBackup(context, state),
+                ),
+                const Divider(height: 1, thickness: 1, color: AppColors.borderFaint),
+                SettingsItemTile(
+                  title: 'Pulihkan data',
+                  subtitle: 'Ganti seluruh data dari berkas cadangan JSON',
+                  icon: Icons.settings_backup_restore,
+                  iconGradient: AppGradients.settingsRestoreIcon,
+                  iconShadow: AppShadows.settingsIconViolet,
+                  onTap: () => _handleRestore(context, state),
+                ),
+              ],
             ),
           ],
         ),
@@ -105,139 +141,21 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: AppDimens.spaceSm),
-      child: Text(
-        title.toUpperCase(),
-        style: AppTypography.labelMd.copyWith(
-          color: AppColors.onSurfaceVariant,
-          letterSpacing: 1.1,
-          fontWeight: FontWeight.bold,
+  Future<void> _handleToggleLock(
+    BuildContext context,
+    AppLockManager lockManager,
+    bool targetValue,
+  ) async {
+    final result = await lockManager.toggleLock(targetValue);
+    if (!context.mounted) return;
+    if (!result.isSuccess && result.message != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result.message!),
+          behavior: SnackBarBehavior.floating,
         ),
-      ),
-    );
-  }
-
-  Widget _buildLockSwitchItem(BuildContext context, AppLockManager? lockManager) {
-    final isEnabled = lockManager?.isEnabled ?? false;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(AppDimens.radiusDefault),
-        border: Border.all(
-          color: AppColors.outlineVariant,
-          width: AppDimens.borderWidthThin,
-        ),
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: AppDimens.spaceMd,
-          vertical: AppDimens.spaceXs,
-        ),
-        leading: Container(
-          padding: const EdgeInsets.all(AppDimens.spaceSm),
-          decoration: BoxDecoration(
-            color: AppColors.surfaceContainerHigh,
-            borderRadius: BorderRadius.circular(AppDimens.radiusDefault),
-          ),
-          child: const Icon(
-            Icons.lock_outline,
-            color: AppColors.primary,
-            size: AppDimens.iconMedium,
-          ),
-        ),
-        title: Text(
-          'Kunci aplikasi',
-          style: AppTypography.bodyLg.copyWith(fontWeight: FontWeight.w600),
-        ),
-        subtitle: const Text(
-          'Minta autentikasi perangkat saat membuka aplikasi',
-          style: AppTypography.bodySm,
-        ),
-        trailing: Switch(
-          key: const Key('switch_kunci_aplikasi'),
-          value: isEnabled,
-          activeThumbColor: AppColors.primary,
-          onChanged: lockManager == null
-              ? null
-              : (value) async {
-                  final result = await lockManager.toggleLock(value);
-                  if (!context.mounted) return;
-                  if (!result.isSuccess && result.message != null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(result.message!),
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
-                  }
-                },
-        ),
-        onTap: lockManager == null
-            ? null
-            : () async {
-                final result = await lockManager.toggleLock(!isEnabled);
-                if (!context.mounted) return;
-                if (!result.isSuccess && result.message != null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(result.message!),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                }
-              },
-      ),
-    );
-  }
-
-  Widget _buildMenuItem({
-    required BuildContext context,
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(AppDimens.radiusDefault),
-        border: Border.all(
-          color: AppColors.outlineVariant,
-          width: AppDimens.borderWidthThin,
-        ),
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: AppDimens.spaceMd,
-          vertical: AppDimens.spaceXs,
-        ),
-        leading: Container(
-          padding: const EdgeInsets.all(AppDimens.spaceSm),
-          decoration: BoxDecoration(
-            color: AppColors.surfaceContainerHigh,
-            borderRadius: BorderRadius.circular(AppDimens.radiusDefault),
-          ),
-          child: Icon(icon, color: AppColors.primary, size: AppDimens.iconMedium),
-        ),
-        title: Text(
-          title,
-          style: AppTypography.bodyLg.copyWith(fontWeight: FontWeight.w600),
-        ),
-        subtitle: Text(
-          subtitle,
-          style: AppTypography.bodySm,
-        ),
-        trailing: const Icon(
-          Icons.chevron_right,
-          color: AppColors.onSurfaceVariant,
-          size: AppDimens.iconMedium,
-        ),
-        onTap: onTap,
-      ),
-    );
+      );
+    }
   }
 
   Future<void> _handleBackup(BuildContext context, FinanceState state) async {
@@ -281,7 +199,10 @@ class SettingsScreen extends StatelessWidget {
           context: context,
           builder: (ctx) => AlertDialog(
             title: const Text('Gagal Mencadangkan', style: AppTypography.headlineSm),
-            content: Text('Terjadi kesalahan saat membuat cadangan: $e', style: AppTypography.bodyMd),
+            content: Text(
+              'Terjadi kesalahan saat membuat cadangan: $e',
+              style: AppTypography.bodyMd,
+            ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
@@ -299,7 +220,6 @@ class SettingsScreen extends StatelessWidget {
       return await filePickerOverride!();
     }
 
-    // Menggunakan FileType.any tanpa filter ekstensi/MIME agar file lama (.bin / nama acak) tetap dapat dipilih
     final result = await FilePicker.pickFiles(
       type: FileType.any,
       withData: true,
@@ -311,7 +231,6 @@ class SettingsScreen extends StatelessWidget {
 
     final pickedFile = result.files.single;
 
-    // Tolak berkas lebih besar dari 20 MB sebelum membaca isi
     if (pickedFile.size > BackupService.maxFileSizeBytes) {
       throw const BackupValidationException(
         'Ukuran berkas melebihi batas maksimal 20 MB',
@@ -340,10 +259,9 @@ class SettingsScreen extends StatelessWidget {
     try {
       final jsonContent = await _pickFileContent(context);
       if (jsonContent == null) {
-        return; // Dibatalkan oleh pengguna
+        return;
       }
 
-      // Validasi ukuran isi berkas (maksimal 20 MB)
       if (utf8.encode(jsonContent).length > BackupService.maxFileSizeBytes) {
         throw const BackupValidationException(
           'Ukuran berkas melebihi batas maksimal 20 MB',
@@ -358,61 +276,7 @@ class SettingsScreen extends StatelessWidget {
       final confirmed = await showDialog<bool>(
         context: context,
         barrierDismissible: false,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Pulihkan Data?', style: AppTypography.headlineSm),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Seluruh data saat ini akan DIGANTI dengan isi berkas cadangan berikut:',
-                  style: AppTypography.bodyMd,
-                ),
-                const SizedBox(height: AppDimens.spaceMd),
-                Container(
-                  padding: const EdgeInsets.all(AppDimens.spaceSm),
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceContainerHigh,
-                    borderRadius: BorderRadius.circular(AppDimens.radiusDefault),
-                  ),
-                  child: Column(
-                    children: [
-                      _buildSummaryRow('Tanggal Ekspor', summary.exportedAtText),
-                      const Divider(height: 12),
-                      _buildSummaryRow('Dompet', '${summary.walletCount} dompet'),
-                      const Divider(height: 12),
-                      _buildSummaryRow('Kategori', '${summary.categoryCount} kategori'),
-                      const Divider(height: 12),
-                      _buildSummaryRow('Transaksi', '${summary.transactionCount} transaksi'),
-                      const Divider(height: 12),
-                      _buildSummaryRow('Rentang Tanggal', summary.dateRangeText),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: AppDimens.spaceMd),
-                Text(
-                  'Peringatan: Tindakan ini tidak dapat dibatalkan. Pastikan data saat ini sudah dicadangkan jika masih diperlukan.',
-                  style: AppTypography.bodySm.copyWith(color: AppColors.error),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Batal'),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.error,
-                foregroundColor: AppColors.onPrimary,
-              ),
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Ganti Seluruh Data'),
-            ),
-          ],
-        ),
+        builder: (_) => RestorePreviewDialog(summary: summary),
       );
 
       if (confirmed != true) return;
@@ -453,7 +317,10 @@ class SettingsScreen extends StatelessWidget {
           context: context,
           builder: (ctx) => AlertDialog(
             title: const Text('Gagal Memulihkan Data', style: AppTypography.headlineSm),
-            content: Text('Terjadi kesalahan saat memproses data: $e', style: AppTypography.bodyMd),
+            content: Text(
+              'Terjadi kesalahan saat memproses data: $e',
+              style: AppTypography.bodyMd,
+            ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
@@ -464,22 +331,5 @@ class SettingsScreen extends StatelessWidget {
         );
       }
     }
-  }
-
-  static Widget _buildSummaryRow(String label, String value) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(label, style: AppTypography.bodySm.copyWith(color: AppColors.onSurfaceVariant)),
-        const SizedBox(width: AppDimens.spaceSm),
-        Flexible(
-          child: Text(
-            value,
-            style: AppTypography.bodySm.copyWith(fontWeight: FontWeight.w600),
-            textAlign: TextAlign.end,
-          ),
-        ),
-      ],
-    );
   }
 }

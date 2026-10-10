@@ -3,15 +3,15 @@ import '../logic/finance_state.dart';
 import '../models/transaction.dart';
 import '../theme/app_theme.dart';
 import '../widgets/buku_kas_action_button.dart';
+import '../widgets/buku_kas_day_group.dart';
 import '../widgets/buku_kas_header.dart';
 import '../widgets/buku_kas_hero_summary.dart';
-import '../widgets/buku_kas_day_group.dart';
 import '../widgets/buku_kas_wallet_bar.dart';
 import 'expense_breakdown_screen.dart';
 import 'settings_screen.dart';
 import 'transaction_form_screen.dart';
 
-// HistoryScreen: Layar utama Buku Kas sesuai revisi keterbacaan
+/// Layar utama Buku Kas sesuai desain tema gelap fintech baru (UI-3)
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
 
@@ -97,6 +97,43 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
+  Widget _buildSectionHeader(int count) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDimens.margin,
+        vertical: AppDimens.spaceSm + 2,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Flexible(
+            child: Text(
+              'Transaksi Terkini',
+              style: AppTypography.sectionTitle,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: AppDimens.spaceSm),
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppDimens.spaceSm,
+              vertical: AppDimens.spaceXs / 2,
+            ),
+            decoration: BoxDecoration(
+              color: AppColors.tintPurpleBg,
+              border: Border.all(color: AppColors.tintPurpleBorder),
+              borderRadius: BorderRadius.circular(AppDimens.radiusFull),
+            ),
+            child: Text(
+              '$count Catatan',
+              style: AppTypography.sectionBadge,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = FinanceScope.of(context);
@@ -109,7 +146,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
       _selectedMonth.year,
       _selectedMonth.month,
     );
-
     final dailyGroups = state.getDailyTransactionGroups(
       _selectedMonth.year,
       _selectedMonth.month,
@@ -122,70 +158,64 @@ class _HistoryScreenState extends State<HistoryScreen> {
         onPressed: () => _openTransactionForm(),
       ),
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.only(bottom: AppDimens.bottomListPadding),
-          children: [
-            // 1. Header judul layar 'Catatan Keuangan' dan navigasi bulan
-            BukuKasHeader(
-              selectedMonth: _selectedMonth,
-              onPreviousMonth: _previousMonth,
-              onNextMonth: _nextMonth,
-              onSettings: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const SettingsScreen()),
-                );
-              },
-            ),
-
-            // 2. Saldo tiap dompet sebagai kotak terpisah horizontal
-            BukuKasWalletBar(
-              wallets: state.activeWallets,
-              walletBalances: walletBalances,
-            ),
-
-            // 3. Ringkasan Pemasukan, Pengeluaran, Selisih dalam satu kartu (tiga kolom sejajar)
-            BukuKasHeroSummary(
-              summary: summary,
-              onViewDetails: _openExpenseBreakdown,
-            ),
-
-            // 4. Judul seksi Riwayat Transaksi + counter
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppDimens.margin,
-                vertical: AppDimens.spaceSm,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        child: CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Riwayat Transaksi', style: AppTypography.sectionHeaderTitle),
-                  Text(
-                    '${filteredTransactions.length} transaksi',
-                    style: AppTypography.sectionHeaderCount,
+                  BukuKasHeader(
+                    selectedMonth: _selectedMonth,
+                    onPreviousMonth: _previousMonth,
+                    onNextMonth: _nextMonth,
+                    onSettings: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                      );
+                    },
                   ),
+                  BukuKasWalletBar(
+                    wallets: state.activeWallets,
+                    walletBalances: walletBalances,
+                  ),
+                  BukuKasHeroSummary(
+                    summary: summary,
+                    onViewDetails: _openExpenseBreakdown,
+                  ),
+                  _buildSectionHeader(filteredTransactions.length),
                 ],
               ),
             ),
-
-            // 5. Daftar transaksi dikelompokkan per hari atau status memuat / pesan kosong
             if (state.isLoading)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: AppDimens.spaceXl),
-                child: Center(
-                  child: CircularProgressIndicator(color: AppColors.secondary),
+              const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: AppDimens.spaceXl),
+                  child: Center(
+                    child: CircularProgressIndicator(color: AppColors.secondary),
+                  ),
                 ),
               )
             else if (dailyGroups.isEmpty)
-              _buildEmptyState()
+              SliverToBoxAdapter(
+                child: _buildEmptyState(),
+              )
             else
-              for (final group in dailyGroups)
-                BukuKasDayGroup(
-                  group: group,
-                  getWalletName: state.getWalletName,
-                  getCategoryName: state.getCategoryName,
-                  onTransactionTap: (tx) => _openTransactionForm(tx),
+              SliverPadding(
+                padding: const EdgeInsets.only(bottom: AppDimens.bottomListPadding),
+                sliver: SliverList.builder(
+                  itemCount: dailyGroups.length,
+                  itemBuilder: (context, index) {
+                    return BukuKasDayGroup(
+                      group: dailyGroups[index],
+                      getWalletName: state.getWalletName,
+                      getCategoryName: state.getCategoryName,
+                      getCategory: state.getCategoryById,
+                      onTransactionTap: (tx) => _openTransactionForm(tx),
+                    );
+                  },
                 ),
+              ),
           ],
         ),
       ),

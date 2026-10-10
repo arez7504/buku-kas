@@ -11,6 +11,8 @@ class Wallets extends Table {
   TextColumn get name => text()();
   IntColumn get initialBalance => integer().withDefault(const Constant(0))();
   BoolColumn get isArchived => boolean().withDefault(const Constant(false))();
+  TextColumn get iconKey => text().nullable()();
+  TextColumn get colorKey => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -23,6 +25,8 @@ class Categories extends Table {
   TextColumn get name => text()();
   TextColumn get type => text()(); // 'income' atau 'expense'
   BoolColumn get isArchived => boolean().withDefault(const Constant(false))();
+  TextColumn get iconKey => text().nullable()();
+  TextColumn get colorKey => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -58,9 +62,9 @@ class AppDatabase extends _$AppDatabase {
     return AppDatabase(NativeDatabase.memory());
   }
 
-  // schemaVersion = 2 sesuai ketentuan Milestone 5
+  // schemaVersion = 4 sesuai ketentuan Milestone UI-8
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration {
@@ -73,6 +77,14 @@ class AppDatabase extends _$AppDatabase {
         if (from < 2) {
           await m.addColumn(wallets, wallets.isArchived);
           await m.addColumn(categories, categories.isArchived);
+        }
+        if (from < 3) {
+          await m.addColumn(categories, categories.iconKey);
+          await m.addColumn(categories, categories.colorKey);
+        }
+        if (from < 4) {
+          await m.addColumn(wallets, wallets.iconKey);
+          await m.addColumn(wallets, wallets.colorKey);
         }
       },
       beforeOpen: (details) async {

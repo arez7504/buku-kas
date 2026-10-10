@@ -1,17 +1,21 @@
 import 'package:flutter/material.dart';
 import '../logic/finance_calculator.dart';
+import '../models/category.dart';
 import '../theme/app_theme.dart';
+import '../theme/category_style.dart';
 
-// Baris satu kategori pengeluaran: nama, nominal, persen, dan batang horizontal proporsional
+// Baris satu kategori pengeluaran: ikon, nama, nominal, persen, dan batang horizontal proporsional
 class ExpenseCategoryRow extends StatelessWidget {
   final CategoryExpenseBreakdown item;
   final int maxAmount;
+  final Category? category;
   final VoidCallback? onTap;
 
   const ExpenseCategoryRow({
     super.key,
     required this.item,
     required this.maxAmount,
+    this.category,
     this.onTap,
   });
 
@@ -21,6 +25,11 @@ class ExpenseCategoryRow extends StatelessWidget {
     final double ratio = maxAmount > 0
         ? (item.amount / maxAmount).clamp(0.0, 1.0)
         : 0.0;
+
+    final style = CategoryStyleRegistry.resolveCategoryStyle(
+      category: category,
+      categoryName: item.categoryName,
+    );
 
     return InkWell(
       // Tap baris kategori ditunda (tidak melakukan apa-apa)
@@ -33,12 +42,27 @@ class ExpenseCategoryRow extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Baris atas: nama kategori, nominal, dan persen dari total
+            // Baris atas: ikon kategori, nama kategori, nominal, dan persen dari total
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.baseline,
-              textBaseline: TextBaseline.alphabetic,
               children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: style.backgroundColor,
+                    borderRadius: BorderRadius.circular(AppDimens.radiusDefault),
+                    border: Border.all(
+                      color: style.borderColor,
+                      width: AppDimens.borderWidthThin,
+                    ),
+                  ),
+                  child: Icon(
+                    style.icon,
+                    size: AppDimens.iconSmall,
+                    color: style.iconColor,
+                  ),
+                ),
+                const SizedBox(width: AppDimens.spaceMd),
                 Expanded(
                   child: Text(
                     item.categoryName,

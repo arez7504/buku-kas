@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import '../logic/finance_state.dart';
 import '../models/category.dart';
 import '../theme/app_theme.dart';
+import '../widgets/category_delete_dialog.dart';
+import '../widgets/category_management_card.dart';
+import '../widgets/category_segmented_tabs.dart';
 
-// Layar Kelola Kategori sesuai Milestone 5:
-// Daftar dikelompokkan Pemasukan/Pengeluaran, tambah, ubah nama, arsipkan, hapus bersyarat
+import 'category_form_screen.dart';
+
+/// Layar Kelola Kategori bertema gelap sesuai Milestone UI-6 dan UI-7
 class CategoryManagementScreen extends StatefulWidget {
   const CategoryManagementScreen({super.key});
 
@@ -31,172 +35,49 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen>
   CategoryType get _currentTabType =>
       _tabController.index == 0 ? CategoryType.expense : CategoryType.income;
 
-  void _showAddCategoryDialog(FinanceState state) {
-    final nameController = TextEditingController();
-    var selectedType = _currentTabType;
-    String? errorMessage;
-
-    showDialog(
-      context: context,
-      builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              backgroundColor: AppColors.surface,
-              title: const Text('Tambah Kategori', style: AppTypography.headlineSm),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('TIPE KATEGORI', style: AppTypography.labelCaps),
-                  const SizedBox(height: AppDimens.spaceXs),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ChoiceChip(
-                          label: const Center(child: Text('Pengeluaran')),
-                          selected: selectedType == CategoryType.expense,
-                          onSelected: (selected) {
-                            if (selected) {
-                              setDialogState(() {
-                                selectedType = CategoryType.expense;
-                                errorMessage = null;
-                              });
-                            }
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: AppDimens.spaceSm),
-                      Expanded(
-                        child: ChoiceChip(
-                          label: const Center(child: Text('Pemasukan')),
-                          selected: selectedType == CategoryType.income,
-                          onSelected: (selected) {
-                            if (selected) {
-                              setDialogState(() {
-                                selectedType = CategoryType.income;
-                                errorMessage = null;
-                              });
-                            }
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppDimens.spaceMd),
-                  TextField(
-                    key: const Key('category_name_input'),
-                    controller: nameController,
-                    autofocus: true,
-                    decoration: InputDecoration(
-                      labelText: 'Nama Kategori',
-                      errorText: errorMessage,
-                      labelStyle: AppTypography.labelMd,
-                      border: const OutlineInputBorder(),
-                    ),
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogContext),
-                  child: Text('Batal', style: AppTypography.bodyMd.copyWith(color: AppColors.onSurfaceVariant)),
-                ),
-                FilledButton(
-                  key: const Key('category_save_button'),
-                  style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
-                  onPressed: () async {
-                    final name = nameController.text.trim();
-                    final validationError = state.validateCategoryName(name, selectedType);
-                    if (validationError != null) {
-                      setDialogState(() {
-                        errorMessage = validationError;
-                      });
-                      return;
-                    }
-
-                    final newCategory = Category(
-                      id: 'c_${DateTime.now().millisecondsSinceEpoch}',
-                      name: name,
-                      type: selectedType,
-                    );
-
-                    Navigator.pop(dialogContext);
-                    await state.addCategory(newCategory);
-                  },
-                  child: const Text('Simpan', style: TextStyle(color: AppColors.onPrimary)),
-                ),
-              ],
+  void _openAddCategory(FinanceState state) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CategoryFormScreen(
+          initialType: _currentTabType,
+          onValidate: (name, type) => state.validateCategoryName(name, type),
+          onSave: (name, type, iconKey, colorKey) async {
+            final newCategory = Category(
+              id: 'c_${DateTime.now().millisecondsSinceEpoch}',
+              name: name,
+              type: type,
+              iconKey: iconKey,
+              colorKey: colorKey,
             );
+            await state.addCategory(newCategory);
           },
-        );
-      },
+        ),
+      ),
     );
   }
 
-  void _showEditCategoryDialog(FinanceState state, Category category) {
-    final nameController = TextEditingController(text: category.name);
-    String? errorMessage;
-
-    showDialog(
-      context: context,
-      builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              backgroundColor: AppColors.surface,
-              title: const Text('Ubah Nama Kategori', style: AppTypography.headlineSm),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  TextField(
-                    key: const Key('category_name_edit_input'),
-                    controller: nameController,
-                    autofocus: true,
-                    decoration: InputDecoration(
-                      labelText: 'Nama Kategori',
-                      errorText: errorMessage,
-                      labelStyle: AppTypography.labelMd,
-                      border: const OutlineInputBorder(),
-                    ),
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogContext),
-                  child: Text('Batal', style: AppTypography.bodyMd.copyWith(color: AppColors.onSurfaceVariant)),
-                ),
-                FilledButton(
-                  key: const Key('category_update_button'),
-                  style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
-                  onPressed: () async {
-                    final name = nameController.text.trim();
-                    final validationError = state.validateCategoryName(
-                      name,
-                      category.type,
-                      excludeCategoryId: category.id,
-                    );
-                    if (validationError != null) {
-                      setDialogState(() {
-                        errorMessage = validationError;
-                      });
-                      return;
-                    }
-
-                    final updated = category.copyWith(name: name);
-
-                    Navigator.pop(dialogContext);
-                    await state.updateCategory(updated);
-                  },
-                  child: const Text('Simpan', style: TextStyle(color: AppColors.onPrimary)),
-                ),
-              ],
+  void _openEditCategory(FinanceState state, Category category) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CategoryFormScreen(
+          category: category,
+          onValidate: (name, type) => state.validateCategoryName(
+            name,
+            category.type,
+            excludeCategoryId: category.id,
+          ),
+          onSave: (newName, type, iconKey, colorKey) async {
+            final updated = category.copyWith(
+              name: newName,
+              iconKey: iconKey,
+              colorKey: colorKey,
             );
+            await state.updateCategory(updated);
           },
-        );
-      },
+        ),
+      ),
     );
   }
 
@@ -207,34 +88,14 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen>
       showDialog(
         context: context,
         builder: (dialogContext) {
-          return AlertDialog(
-            backgroundColor: AppColors.surface,
-            title: const Text('Tidak Dapat Dihapus', style: AppTypography.headlineSm),
-            content: Text(
-              'Kategori "${category.name}" sudah dipakai dalam transaksi sehingga tidak bisa dihapus permanen. Apakah Anda ingin mengarsipkannya agar tidak muncul lagi sebagai pilihan transaksi baru?',
-              style: AppTypography.bodyMd,
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext),
-                child: Text('Batal', style: AppTypography.bodyMd.copyWith(color: AppColors.onSurfaceVariant)),
-              ),
-              if (!category.isArchived)
-                FilledButton(
-                  key: const Key('offer_archive_category_button'),
-                  style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
-                  onPressed: () async {
-                    final messenger = ScaffoldMessenger.of(context);
-                    Navigator.pop(dialogContext);
-                    await state.archiveCategory(category.id, isArchived: true);
-                    if (!mounted) return;
-                    messenger.showSnackBar(
-                      SnackBar(content: Text('Kategori "${category.name}" berhasil diarsipkan')),
-                    );
-                  },
-                  child: const Text('Arsipkan', style: TextStyle(color: AppColors.onPrimary)),
-                ),
-            ],
+          return CategoryCannotDeleteDialog(
+            category: category,
+            onArchive: () async {
+              final messenger = ScaffoldMessenger.of(context);
+              await state.archiveCategory(category.id, isArchived: true);
+              if (!mounted) return;
+              _showSnackBar(messenger, 'Kategori "${category.name}" berhasil diarsipkan');
+            },
           );
         },
       );
@@ -242,181 +103,144 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen>
       showDialog(
         context: context,
         builder: (dialogContext) {
-          return AlertDialog(
-            backgroundColor: AppColors.surface,
-            title: const Text('Hapus Kategori?', style: AppTypography.headlineSm),
-            content: Text(
-              'Apakah Anda yakin ingin menghapus kategori "${category.name}" secara permanen? Kategori ini belum memiliki transaksi apa pun.',
-              style: AppTypography.bodyMd,
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext),
-                child: Text('Batal', style: AppTypography.bodyMd.copyWith(color: AppColors.onSurfaceVariant)),
-              ),
-              FilledButton(
-                key: const Key('confirm_delete_category_button'),
-                style: FilledButton.styleFrom(backgroundColor: AppColors.error),
-                onPressed: () async {
-                  final messenger = ScaffoldMessenger.of(context);
-                  Navigator.pop(dialogContext);
-                  await state.deleteCategory(category.id);
-                  if (!mounted) return;
-                  messenger.showSnackBar(
-                    SnackBar(content: Text('Kategori "${category.name}" berhasil dihapus permanen')),
-                  );
-                },
-                child: const Text('Hapus', style: TextStyle(color: AppColors.onPrimary)),
-              ),
-            ],
+          return CategoryConfirmDeleteDialog(
+            category: category,
+            onConfirmDelete: () async {
+              final messenger = ScaffoldMessenger.of(context);
+              await state.deleteCategory(category.id);
+              if (!mounted) return;
+              _showSnackBar(messenger, 'Kategori "${category.name}" berhasil dihapus permanen');
+            },
           );
         },
       );
     }
   }
 
-  Widget _buildCategoryList(FinanceState state, CategoryType type) {
-    final list = state.categories.where((c) => c.type == type).toList();
+  void _showSnackBar(ScaffoldMessengerState messenger, String message) {
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(message, style: const TextStyle(color: AppColors.onSurface)),
+        backgroundColor: AppColors.settingsCardBg,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppDimens.radiusDefault),
+          side: const BorderSide(color: AppColors.borderFaint),
+        ),
+      ),
+    );
+  }
 
-    if (list.isEmpty) {
+  Widget _buildCategoryList(FinanceState state, CategoryType type) {
+    final all = state.categories.where((c) => c.type == type).toList();
+    final active = all.where((c) => !c.isArchived).toList();
+    final archived = all.where((c) => c.isArchived).toList();
+
+    if (all.isEmpty) {
       return Center(
         child: Text(
           'Belum ada kategori ${type == CategoryType.income ? "pemasukan" : "pengeluaran"}',
-          style: AppTypography.bodyMd,
+          style: AppTypography.bodyMd.copyWith(color: AppColors.onSurfaceVariant),
         ),
       );
     }
 
-    return ListView.separated(
+    final totalItems = active.length + (archived.isNotEmpty ? 1 + archived.length : 0);
+
+    return ListView.builder(
       padding: const EdgeInsets.symmetric(
         horizontal: AppDimens.margin,
         vertical: AppDimens.spaceMd,
       ),
-      itemCount: list.length,
-      separatorBuilder: (_, __) => const SizedBox(height: AppDimens.spaceSm),
+      itemCount: totalItems,
       itemBuilder: (context, index) {
-        final cat = list[index];
-
-        return Container(
-          decoration: BoxDecoration(
-            color: cat.isArchived
-                ? AppColors.surfaceContainerHigh
-                : AppColors.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(AppDimens.radiusDefault),
-            border: Border.all(
-              color: AppColors.outlineVariant,
-              width: AppDimens.borderWidthThin,
+        if (index < active.length) {
+          final cat = active[index];
+          return Padding(
+            padding: const EdgeInsets.only(bottom: AppDimens.spaceSm + 4),
+            child: CategoryManagementCard(
+              category: cat,
+              onEdit: () => _openEditCategory(state, cat),
+              onArchiveToggle: () async {
+                final messenger = ScaffoldMessenger.of(context);
+                await state.archiveCategory(cat.id, isArchived: true);
+                if (!mounted) return;
+                _showSnackBar(messenger, 'Kategori "${cat.name}" diarsipkan');
+              },
+              onDelete: () => _handleDeleteOrArchive(state, cat),
             ),
-          ),
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppDimens.spaceMd,
-            vertical: AppDimens.spaceSm,
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(AppDimens.spaceSm),
-                decoration: BoxDecoration(
-                  color: cat.isArchived
-                      ? AppColors.surfaceContainerHighest
-                      : (cat.type == CategoryType.income
-                          ? AppColors.incomeGreen.withValues(alpha: 0.1)
-                          : AppColors.expenseRed.withValues(alpha: 0.1)),
-                  borderRadius: BorderRadius.circular(AppDimens.radiusDefault),
-                ),
-                child: Icon(
-                  cat.type == CategoryType.income ? Icons.arrow_downward : Icons.arrow_upward,
-                  size: AppDimens.iconSmall,
-                  color: cat.isArchived
-                      ? AppColors.onSurfaceVariant
-                      : (cat.type == CategoryType.income ? AppColors.incomeGreen : AppColors.expenseRed),
-                ),
+          );
+        }
+
+        if (index == active.length) {
+          return Padding(
+            padding: const EdgeInsets.only(
+              top: AppDimens.spaceSm,
+              bottom: AppDimens.spaceSm,
+            ),
+            child: Text(
+              'DIARSIPKAN',
+              style: AppTypography.settingsSectionHeader.copyWith(
+                color: AppColors.onSurfaceVariant,
               ),
-              const SizedBox(width: AppDimens.spaceMd),
-              Expanded(
-                child: Text(
-                  cat.name,
-                  style: AppTypography.bodyLg.copyWith(
-                    fontWeight: FontWeight.w500,
-                    color: cat.isArchived ? AppColors.onSurfaceVariant : AppColors.onSurface,
-                  ),
-                ),
-              ),
-              if (cat.isArchived) ...[
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppDimens.spaceXs + 2,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(AppDimens.radiusDefault),
-                  ),
-                  child: const Text('Diarsipkan', style: AppTypography.labelCaps),
-                ),
-                const SizedBox(width: AppDimens.spaceSm),
-              ],
-              PopupMenuButton<String>(
-                key: Key('category_menu_${cat.id}'),
-                icon: const Icon(Icons.more_vert, size: AppDimens.iconMedium),
-                onSelected: (value) async {
-                  if (value == 'edit') {
-                    _showEditCategoryDialog(state, cat);
-                  } else if (value == 'archive') {
-                    final messenger = ScaffoldMessenger.of(context);
-                    await state.archiveCategory(cat.id, isArchived: !cat.isArchived);
-                    if (!mounted) return;
-                    final msg = cat.isArchived
-                        ? 'Kategori "${cat.name}" diaktifkan kembali'
-                        : 'Kategori "${cat.name}" diarsipkan';
-                    messenger.showSnackBar(SnackBar(content: Text(msg)));
-                  } else if (value == 'delete') {
-                    _handleDeleteOrArchive(state, cat);
-                  }
-                },
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: 'edit',
-                    child: Row(
-                      children: [
-                        Icon(Icons.edit_outlined, size: AppDimens.iconSmall),
-                        SizedBox(width: AppDimens.spaceSm),
-                        Text('Ubah Nama', style: AppTypography.bodyMd),
-                      ],
-                    ),
-                  ),
-                  PopupMenuItem(
-                    value: 'archive',
-                    child: Row(
-                      children: [
-                        Icon(
-                          cat.isArchived ? Icons.unarchive_outlined : Icons.archive_outlined,
-                          size: AppDimens.iconSmall,
-                        ),
-                        SizedBox(width: AppDimens.spaceSm),
-                        Text(
-                          cat.isArchived ? 'Buka Arsip' : 'Arsipkan',
-                          style: AppTypography.bodyMd,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const PopupMenuItem(
-                    value: 'delete',
-                    child: Row(
-                      children: [
-                        Icon(Icons.delete_outline, color: AppColors.error, size: AppDimens.iconSmall),
-                        SizedBox(width: AppDimens.spaceSm),
-                        Text('Hapus', style: TextStyle(color: AppColors.error)),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ],
+            ),
+          );
+        }
+
+        final archivedIndex = index - active.length - 1;
+        final cat = archived[archivedIndex];
+        return Padding(
+          padding: const EdgeInsets.only(bottom: AppDimens.spaceSm + 4),
+          child: CategoryManagementCard(
+            category: cat,
+            isArchived: true,
+            onEdit: () => _openEditCategory(state, cat),
+            onArchiveToggle: () async {
+              final messenger = ScaffoldMessenger.of(context);
+              await state.archiveCategory(cat.id, isArchived: false);
+              if (!mounted) return;
+              _showSnackBar(messenger, 'Kategori "${cat.name}" diaktifkan kembali');
+            },
+            onDelete: () => _handleDeleteOrArchive(state, cat),
           ),
         );
       },
+    );
+  }
+
+  PreferredSizeWidget _buildAppBar(FinanceState state) {
+    return AppBar(
+      backgroundColor: AppColors.background,
+      elevation: 0,
+      centerTitle: true,
+      title: const Text('Kelola Kategori', style: AppTypography.headlineSm),
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back, size: AppDimens.iconMedium),
+        onPressed: () => Navigator.pop(context),
+      ),
+      actions: [
+        Container(
+          width: AppDimens.addButtonSize,
+          height: AppDimens.addButtonSize,
+          margin: const EdgeInsets.only(right: AppDimens.spaceSm),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withValues(alpha: 0.1),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: AppColors.primary.withValues(alpha: 0.2),
+              width: AppDimens.borderWidthThin,
+            ),
+            boxShadow: AppShadows.walletAddButton,
+          ),
+          child: IconButton(
+            key: const Key('add_category_button'),
+            padding: EdgeInsets.zero,
+            icon: const Icon(Icons.add, size: 22, color: AppColors.primary),
+            tooltip: 'Tambah Kategori',
+            onPressed: () => _openAddCategory(state),
+          ),
+        ),
+      ],
     );
   }
 
@@ -425,40 +249,21 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen>
     final state = FinanceScope.of(context);
 
     return Scaffold(
-      backgroundColor: AppColors.surface,
-      appBar: AppBar(
-        title: const Text('Kelola Kategori', style: AppTypography.headlineSm),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, size: AppDimens.iconMedium),
-          onPressed: () => Navigator.pop(context),
-        ),
-        actions: [
-          IconButton(
-            key: const Key('add_category_button'),
-            icon: const Icon(Icons.add, size: AppDimens.iconLarge),
-            tooltip: 'Tambah Kategori',
-            onPressed: () => _showAddCategoryDialog(state),
-          ),
-        ],
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: AppColors.secondary,
-          unselectedLabelColor: AppColors.onSurfaceVariant,
-          indicatorColor: AppColors.secondary,
-          labelStyle: AppTypography.labelMd.copyWith(fontWeight: FontWeight.w600),
-          unselectedLabelStyle: AppTypography.labelMdInactive,
-          tabs: const [
-            Tab(text: 'Pengeluaran'),
-            Tab(text: 'Pemasukan'),
-          ],
-        ),
-      ),
+      backgroundColor: AppColors.background,
+      appBar: _buildAppBar(state),
       body: SafeArea(
-        child: TabBarView(
-          controller: _tabController,
+        child: Column(
           children: [
-            _buildCategoryList(state, CategoryType.expense),
-            _buildCategoryList(state, CategoryType.income),
+            CategorySegmentedTabs(tabController: _tabController),
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildCategoryList(state, CategoryType.expense),
+                  _buildCategoryList(state, CategoryType.income),
+                ],
+              ),
+            ),
           ],
         ),
       ),

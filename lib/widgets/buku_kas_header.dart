@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../logic/finance_calculator.dart';
 import '../theme/app_theme.dart';
 
-// Header layar Buku Kas: Judul layar 'Catatan Keuangan' dan navigasi bulan
+/// Header layar Buku Kas: ikon dompet, judul tunggal "Buku Kas", pemilih bulan berbentuk pil, dan tombol pengaturan
 class BukuKasHeader extends StatelessWidget {
   final DateTime selectedMonth;
   final VoidCallback onPreviousMonth;
@@ -17,60 +17,125 @@ class BukuKasHeader extends StatelessWidget {
     this.onSettings,
   });
 
-  @override
-  Widget build(BuildContext context) {
-    return Column(
+  Widget _buildWalletTitle() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        // Bar atas: Judul layar 'Catatan Keuangan' dan ikon gerigi Pengaturan
         Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppDimens.margin,
-            vertical: AppDimens.spaceSm,
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: AppGradients.walletIconHeader,
+            border: Border.all(color: AppColors.outlineVariant),
           ),
-          color: AppColors.surface,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const SizedBox(width: AppDimens.submitButtonHeight),
-              const Text('Catatan Keuangan', style: AppTypography.screenTitleSerif),
-              IconButton(
-                key: const Key('settings_button'),
-                icon: const Icon(Icons.settings, size: AppDimens.iconMedium),
-                onPressed: onSettings,
-                tooltip: 'Pengaturan',
-              ),
-            ],
+          child: const Icon(
+            Icons.account_balance_wallet_outlined,
+            size: AppDimens.iconSmall,
+            color: AppColors.primary,
           ),
         ),
-
-        // Bar pemilih bulan (panah kiri, bulan & tahun sans-serif, panah kanan)
-        Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppDimens.margin,
-            vertical: AppDimens.spaceXs,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.chevron_left, size: AppDimens.iconMedium),
-                onPressed: onPreviousMonth,
-                tooltip: 'Bulan sebelumnya',
-              ),
-              Text(
-                FinanceCalculator.formatMonthYear(selectedMonth),
-                style: AppTypography.monthSelectorText,
-              ),
-              IconButton(
-                icon: const Icon(Icons.chevron_right, size: AppDimens.iconMedium),
-                onPressed: onNextMonth,
-                tooltip: 'Bulan berikutnya',
-              ),
-            ],
-          ),
+        const SizedBox(width: AppDimens.spaceSm),
+        const Text(
+          'Buku Kas',
+          style: AppTypography.headerTitle,
         ),
       ],
+    );
+  }
+
+  Widget _buildMonthPill() {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainerLow,
+        border: Border.all(color: AppColors.borderSubtle),
+        borderRadius: BorderRadius.circular(AppDimens.radiusFull),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          InkWell(
+            borderRadius: BorderRadius.circular(AppDimens.radiusFull),
+            onTap: onPreviousMonth,
+            child: const Padding(
+              padding: EdgeInsets.all(AppDimens.spaceXs),
+              child: Icon(
+                Icons.chevron_left,
+                size: AppDimens.iconSmall,
+                color: AppColors.onSurfaceVariant,
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppDimens.spaceXs),
+            child: Text(
+              FinanceCalculator.formatMonthYear(selectedMonth),
+              style: AppTypography.monthPicker,
+            ),
+          ),
+          InkWell(
+            borderRadius: BorderRadius.circular(AppDimens.radiusFull),
+            onTap: onNextMonth,
+            child: const Padding(
+              padding: EdgeInsets.all(AppDimens.spaceXs),
+              child: Icon(
+                Icons.chevron_right,
+                size: AppDimens.iconSmall,
+                color: AppColors.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSettingsButton() {
+    return InkWell(
+      key: const Key('settings_button'),
+      borderRadius: BorderRadius.circular(AppDimens.radiusFull),
+      onTap: onSettings,
+      child: Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          color: AppColors.surfaceContainerLow,
+          border: Border.all(color: AppColors.borderSubtle),
+          shape: BoxShape.circle,
+        ),
+        child: const Icon(
+          Icons.settings_outlined,
+          size: AppDimens.iconSmall,
+          color: AppColors.onSurfaceVariant,
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDimens.margin,
+        vertical: AppDimens.spaceSm,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildWalletTitle(),
+              _buildSettingsButton(),
+            ],
+          ),
+          const SizedBox(height: AppDimens.spaceSm),
+          Center(
+            child: _buildMonthPill(),
+          ),
+        ],
+      ),
     );
   }
 }

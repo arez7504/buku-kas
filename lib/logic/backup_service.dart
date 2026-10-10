@@ -2,6 +2,8 @@ import 'dart:convert';
 import '../models/category.dart';
 import '../models/transaction.dart';
 import '../models/wallet.dart';
+import '../theme/category_style.dart';
+import '../theme/wallet_style.dart';
 
 /// Exception khusus untuk kegagalan validasi berkas cadangan (backup)
 class BackupValidationException implements Exception {
@@ -74,7 +76,7 @@ class BackupSummary {
 
 /// Layanan murni serialisasi dan validasi data cadangan (tanpa ketergantungan UI atau DB)
 class BackupService {
-  static const int currentFormatVersion = 1;
+  static const int currentFormatVersion = 3;
   static const int maxFileSizeBytes = 20 * 1024 * 1024; // 20 MB
 
   /// Memvalidasi ukuran berkas dalam byte sebelum proses pembacaan data.
@@ -114,6 +116,8 @@ class BackupService {
                 'name': w.name,
                 'initialBalance': w.initialBalance,
                 'isArchived': w.isArchived,
+                'iconKey': w.iconKey,
+                'colorKey': w.colorKey,
               })
           .toList(),
       'categories': categories
@@ -122,6 +126,8 @@ class BackupService {
                 'name': c.name,
                 'type': c.type.name,
                 'isArchived': c.isArchived,
+                'iconKey': c.iconKey,
+                'colorKey': c.colorKey,
               })
           .toList(),
       'transactions': transactions
@@ -165,7 +171,7 @@ class BackupService {
       throw const BackupValidationException('Format berkas cadangan harus berupa objek JSON');
     }
 
-    // 1. Validasi formatVersion
+    // 1. Validasi formatVersion (menerima versi 1, versi 2, dan versi 3)
     if (!decoded.containsKey('formatVersion')) {
       throw const BackupValidationException('Field "formatVersion" wajib ada dalam berkas cadangan');
     }
@@ -173,9 +179,9 @@ class BackupService {
     if (rawVersion is! int) {
       throw const BackupValidationException('Field "formatVersion" harus berupa bilangan bulat (integer)');
     }
-    if (rawVersion != currentFormatVersion) {
+    if (rawVersion != 1 && rawVersion != 2 && rawVersion != 3) {
       throw BackupValidationException(
-        'Format versi berkas ($rawVersion) tidak dikenal atau tidak didukung (versi yang didukung: $currentFormatVersion)',
+        'Format versi berkas ($rawVersion) tidak dikenal atau tidak didukung (versi yang didukung: 1, 2, 3)',
       );
     }
 
@@ -226,12 +232,59 @@ class BackupService {
         throw BackupValidationException('Status arsip pada dompet "$name" harus berupa boolean');
       }
 
+      final rawIconKey = w['iconKey'];
+      final rawColorKey = w['colorKey'];
+
+      String? iconKey;
+      if (rawIconKey != null) {
+        if (rawIconKey is! String) {
+          throw BackupValidationException(
+            'Kunci ikon pada dompet "$name" harus berupa teks atau null',
+          );
+        }
+        if (rawIconKey.length > 50) {
+          throw BackupValidationException(
+            'Kunci ikon pada dompet "$name" terlalu panjang (maksimal 50 karakter)',
+          );
+        }
+        final trimmed = rawIconKey.trim();
+        // Kunci tidak dikenal TIDAK menolak file; diperlakukan kosong (fallback)
+        if (WalletStyleRegistry.icons.containsKey(trimmed)) {
+          iconKey = trimmed;
+        } else {
+          iconKey = null;
+        }
+      }
+
+      String? colorKey;
+      if (rawColorKey != null) {
+        if (rawColorKey is! String) {
+          throw BackupValidationException(
+            'Kunci warna pada dompet "$name" harus berupa teks atau null',
+          );
+        }
+        if (rawColorKey.length > 50) {
+          throw BackupValidationException(
+            'Kunci warna pada dompet "$name" terlalu panjang (maksimal 50 karakter)',
+          );
+        }
+        final trimmed = rawColorKey.trim();
+        // Kunci tidak dikenal TIDAK menolak file; diperlakukan kosong (fallback)
+        if (WalletStyleRegistry.colors.containsKey(trimmed)) {
+          colorKey = trimmed;
+        } else {
+          colorKey = null;
+        }
+      }
+
       parsedWallets.add(
         Wallet(
           id: id,
           name: name,
           initialBalance: initialBalance,
           isArchived: isArchived == true,
+          iconKey: iconKey,
+          colorKey: colorKey,
         ),
       );
     }
@@ -274,12 +327,59 @@ class BackupService {
         throw BackupValidationException('Status arsip pada kategori "$name" harus berupa boolean');
       }
 
+      final rawIconKey = c['iconKey'];
+      final rawColorKey = c['colorKey'];
+
+      String? iconKey;
+      if (rawIconKey != null) {
+        if (rawIconKey is! String) {
+          throw BackupValidationException(
+            'Kunci ikon pada kategori "$name" harus berupa teks atau null',
+          );
+        }
+        if (rawIconKey.length > 50) {
+          throw BackupValidationException(
+            'Kunci ikon pada kategori "$name" terlalu panjang (maksimal 50 karakter)',
+          );
+        }
+        final trimmed = rawIconKey.trim();
+        // Kunci tidak dikenal TIDAK menolak file; diperlakukan kosong (fallback)
+        if (CategoryStyleRegistry.icons.containsKey(trimmed)) {
+          iconKey = trimmed;
+        } else {
+          iconKey = null;
+        }
+      }
+
+      String? colorKey;
+      if (rawColorKey != null) {
+        if (rawColorKey is! String) {
+          throw BackupValidationException(
+            'Kunci warna pada kategori "$name" harus berupa teks atau null',
+          );
+        }
+        if (rawColorKey.length > 50) {
+          throw BackupValidationException(
+            'Kunci warna pada kategori "$name" terlalu panjang (maksimal 50 karakter)',
+          );
+        }
+        final trimmed = rawColorKey.trim();
+        // Kunci tidak dikenal TIDAK menolak file; diperlakukan kosong (fallback)
+        if (CategoryStyleRegistry.colors.containsKey(trimmed)) {
+          colorKey = trimmed;
+        } else {
+          colorKey = null;
+        }
+      }
+
       parsedCategories.add(
         Category(
           id: id,
           name: name,
           type: typeStr == 'income' ? CategoryType.income : CategoryType.expense,
           isArchived: isArchived == true,
+          iconKey: iconKey,
+          colorKey: colorKey,
         ),
       );
     }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
 // Komponen input catatan transaksi sesuai design/catat.html
+// SATU kolom dengan satu tepi (tidak ada kotak bersarang berlapis garis tepi).
 class CatatNoteInput extends StatelessWidget {
   final TextEditingController controller;
 
@@ -14,15 +15,15 @@ class CatatNoteInput extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(AppDimens.radiusDefault),
+        color: AppColors.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(AppDimens.radiusLg),
         border: Border.all(
-          color: AppColors.surfaceContainerHigh,
+          color: AppColors.borderFaint,
           width: AppDimens.borderWidthThin,
         ),
       ),
       padding: const EdgeInsets.symmetric(
-        horizontal: AppDimens.spaceMd,
+        horizontal: AppDimens.spaceMd - 2,
         vertical: AppDimens.spaceXs,
       ),
       child: Row(
@@ -36,14 +37,13 @@ class CatatNoteInput extends StatelessWidget {
           Expanded(
             child: TextField(
               controller: controller,
-              style: AppTypography.bodyMd,
+              style: AppTypography.bodyMd.copyWith(
+                fontSize: 13,
+                color: Colors.white,
+              ),
               decoration: const InputDecoration(
                 hintText: 'Catatan opsional (cth: Kopi pagi)...',
-                hintStyle: TextStyle(
-                  fontFamily: AppFonts.hankenGrotesk,
-                  fontSize: 14,
-                  color: AppColors.outline,
-                ),
+                hintStyle: AppTypography.catatNoteHint,
                 border: InputBorder.none,
                 isDense: true,
                 contentPadding: EdgeInsets.symmetric(vertical: AppDimens.spaceSm),

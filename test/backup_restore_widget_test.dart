@@ -67,9 +67,9 @@ void main() {
       expect(sharedFileName, endsWith('.json'));
       expect(sharedContent, isNotNull);
 
-      // Verifikasi JSON yang dibagikan memuat formatVersion 1 dan dompet seed
+      // Verifikasi JSON yang dibagikan memuat formatVersion 3 dan dompet seed
       final decoded = jsonDecode(sharedContent!) as Map<String, dynamic>;
-      expect(decoded['formatVersion'], 1);
+      expect(decoded['formatVersion'], 3);
       expect((decoded['wallets'] as List).length, 3);
       expect(find.text('File cadangan siap dibagikan'), findsOneWidget);
     });

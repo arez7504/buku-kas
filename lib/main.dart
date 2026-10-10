@@ -71,7 +71,7 @@ class _MyAppState extends State<MyApp> {
         child: MaterialApp(
           title: 'Catatan Keuangan',
           debugShowCheckedModeBanner: false,
-          theme: AppTheme.lightTheme,
+          theme: AppTheme.darkTheme,
           builder: (context, child) {
             return AppLockWrapper(
               child: child ?? const SizedBox.shrink(),

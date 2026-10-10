@@ -48,6 +48,8 @@ Dokumen ini berisi spesifikasi kebutuhan minimal (Minimum Viable Product / MVP) 
 - `id`: String (identifikasi unik)
 - `name`: String (nama kategori, contoh: "Makan", "Gaji")
 - `type`: String / Enum (`income` atau `expense`)
+- `iconKey`: String? (kunci ikon dari registry Material Icons, contoh: "makan", "kafe", "mobil")
+- `colorKey`: String? (kunci warna dari palet 12 gradasi, contoh: "violet", "emerald", "cyan")
 
 #### C. Transaksi (`Transaction`)
 - `id`: String (identifikasi unik)
@@ -208,6 +210,72 @@ Dokumen ini berisi spesifikasi kebutuhan minimal (Minimum Viable Product / MVP) 
     - Saat berstatus terkunci, seluruh isi aplikasi disembunyikan menggunakan `LockScreen` polos dengan tombol "Buka" (isi aplikasi tidak terlihat baik di layar utama maupun di tampilan aplikasi terbaru / Recent Apps).
     - Arsitektur terisolasi: abstraksi `AppLockAuthService`, `AppLockStorage`, dan `AppLockManager` (`ChangeNotifier` & `WidgetsBindingObserver`) dipisahkan rapi dari UI untuk pengujian otomatis menggunakan fake/mock.
 
+12. **Milestone UI-3 (Tema Gelap Baru + Redesain Layar Buku Kas):**
+    - Tema gelap fintech modern (`#0b0b13` surface, `#181826` container, dsb.) menjadi satu-satunya tema aplikasi, menggantikan seluruh palet krem/terracotta.
+    - Ekstraksi token terpusat ke `lib/theme/app_theme.dart` (`AppColors`, `AppGradients`, `AppDimens`, `AppTypography`) tanpa hardcoded nilai mentah di widget.
+    - Font lokal `Plus Jakarta Sans` dibundel offline di `assets/fonts/` (bobot 400, 500, 600, 700, 800) berlisensi SIL Open Font License dan didaftarkan di `pubspec.yaml` tanpa package eksternal `google_fonts`.
+    - Angka nominal diformat dengan tabular figures (`FontFeature.tabularFigures()`).
+    - Latar peluncuran native Android diubah ke warna latar gelap `#0b0b13` (`colors.xml`, `launch_background.xml`, `styles.xml`) untuk mengeliminasi kedipan putih saat dibuka, tanpa menyentuh applicationId, namespace, atau penandatanganan.
+    - Redesain Layar Buku Kas (`HistoryScreen` dan komponen terkait):
+      - Header: Ikon dompet bulat bertint gradasi + judul tunggal "Buku Kas", ikon gerigi Pengaturan berdesain selaras, dan pemilih bulan pil panah kiri/kanan.
+      - Kartu Hero: Label "PENGELUARAN BULAN INI", nominal besar dengan `FittedBox`, dua kartu kecil berdampingan (Pemasukan bertanda panah hijau dan Selisih dengan tanda minus & merah saat defisit), serta tautan "Lihat rincian pengeluaran" di baris bawah kartu.
+      - Bagian Akun & Dompet: Menampilkan counter "X Akun Aktif", kartu dompet scrollable horizontal dengan nama 1 baris (`maxLines: 1`, `ellipsis`), dan tint kartu bergilir dari palet HTML via `lib/theme/wallet_card_style.dart`.
+      - Transaksi Terkini: Menampilkan counter catatan bulanan, pengelompokan transaksi per hari dalam kartu modern dengan dot indicator warna neon, header tanggal, dan subtotal harian (pemasukan - pengeluaran; hari transfer saja tanpa subtotal).
+      - Baris Transaksi: Kotak ikon bertint (`lib/theme/category_icon_mapping.dart`), judul berupa catatan (jika ada) atau nama kategori / "Transfer: A → B", baris kedua nama dompet (ditambah jam hanya bila bermakna), kanan nominal dan badge kategori huruf kapital kecil. Tap baris tetap membuka form edit.
+      - Tombol Aksi: Tombol gradasi mengambang "Catat Transaksi" di bagian bawah menggantikan bilah navigasi bawah, dengan bottom padding pada daftar agar baris terakhir tidak tertutup.
+      - Elemen yang sengaja tidak diterjemahkan (sesuai arahan karena tidak ada di SPEC): titik hijau di samping judul, kata "Pribadi", pil "Sep 2026" di kartu utama, teks "Alokasi gaji & dividen", bilah progres dan persen di kartu Selisih, keterangan tipe dompet ("Rekening Utama / Dompet Fisik / GoPay / OVO"), tautan "Lihat Semua", tab "Riwayat", dan dock bilah navigasi bawah.
+
+13. **Milestone UI-4 (Layar Catat Transaksi Bertema Gelap):**
+    - Redesain layar Catat Transaksi (`TransactionFormScreen`) dan sub-komponennya mengikuti acuan `design/catat.html` dan `design/catat.png`.
+    - Memakai ulang seluruh token tema gelap dari UI-3 dan menambahkan token khusus Catat di `lib/theme/app_theme.dart` (`AppColors.catatSourceActive`, `catatKeypadKey`, `catatKeypadBg`, `catatDateChipBg`, `secondaryFixed`, `AppGradients.catatTabActive`, `catatAmountCard`, `catatCursor`, `catatCategoryActive`, `catatSubmitButton`, `AppShadows`).
+    - **Header:** Panah kembali + judul "Catat Transaksi" (atau "Edit Transaksi" saat edit). Tanpa tombol menu opsi "...".
+    - **Tab Tipe:** Pil 3 pilihan (Pengeluaran / Pemasukan / Transfer) dengan ikon panah bawah, panah atas, dan sync; tab aktif bergradasi neon ungu-biru dengan bayangan halus. Dilengkapi `FittedBox` agar teks tidak pernah overflow pada layar sempit.
+    - **Kartu Nominal:** Gradasi vertikal `#181826` ke `#12121E`, label kapital "NOMINAL <TIPE>", nominal ekstra besar dengan tabular figures, kursor berkedip gradasi cyan-ungu (menjaga seluruh perilaku kedip kursor, key `catat_cursor_fade`, dan reset kedip saat input keypad), serta chip tanggal di bawahnya (tap membuka dialog pemilih tanggal).
+    - **Kategori Cepat:** Khusus tipe Pemasukan dan Pengeluaran, chip horizontal dengan ikon Material hasil pemetaan `AppCategoryIcons`, nama kategori terpilih ditampilkan di sebelah kanan label.
+    - **Sumber Dana:** Chip dompet dilengkapi dot indicator bulat 6px (warna cyan saat aktif). Pada mode Transfer, menampilkan baris "DARI (SUMBER)" dan "KE (TUJUAN)" dengan gaya chip titik yang seragam.
+    - **Catatan:** SATU kolom teks bertepi tunggal (`Border.all(color: AppColors.borderFaint)`), mengoreksi cacat kotak bersarang berlapis pada mockup HTML.
+    - **Keypad Angka:** 1-9, 000 (aksen cyan), 0, dan tombol hapus (backspace). Subteks huruf ABC/DEF/dst pada tombol angka telah DIHAPUS bersih sesuai arahan.
+    - **Tombol Simpan:** Tombol CTA bergradasi penuh di bagian bawah dengan ikon `check_circle`, label dinamis mengikuti tipe transaksi, serta menghormati safe area bawah (gesture bar).
+    - **Tata Letak Fleksibel & Responsif:** Menggunakan `SingleChildScrollView` + `ConstrainedBox` + `IntrinsicHeight` + `Spacer()` fleksibel antara kolom catatan dan keypad. Menjamin bebas overflow (0 RenderFlex errors) pada resolusi 360x640 dp maupun 411x891 dp.
+
+14. **Milestone UI-5 (Layar Pengaturan & Kelola Dompet Bertema Gelap):**
+    - Redesain layar Pengaturan (`SettingsScreen`) dan Kelola Dompet (`WalletManagementScreen`) mengacu pada `design/settings_screen/settings_screen.html` & `.png` serta `design/kelola dompet/kelola_dompet.html` & `.png`.
+    - Menggunakan kembali token tema gelap UI-3 & UI-4 dan menambahkan token spesifik UI-5 di `lib/theme/app_theme.dart` (`AppColors.settingsCardBg`, `switchTrackActive`, `walletInitialBalance`, `walletCardBg`, `AppGradients.settingsWalletIcon`, `settingsCategoryIcon`, `settingsSecurityIcon`, `settingsBackupIcon`, `settingsRestoreIcon`, `walletBankIcon`, `walletCashIcon`, `walletEWalletIcon`, `walletGeneralIcon`, `AppShadows.settingsCard`, `settingsIconPurple`, `settingsIconCyan`, `settingsIconAmber`, `settingsIconTeal`, `settingsIconViolet`, `walletIconBank`, `walletIconCash`, `walletIconEWallet`, `walletIconGeneral`, `walletAddButton`, `walletCard`, `AppDimens.settingsIconBoxSize`, `settingsIconInner`, `walletIconBoxSize`, `walletIconInner`, `addButtonSize`, `AppTypography.settingsSectionHeader`, `settingsItemTitle`, `settingsItemSubtitle`, `walletCardTitle`, `walletBalanceLabel`, `walletBalanceValue`, `walletInitialBalance`).
+    - **Pengaturan (`SettingsScreen`):**
+      - Header: Judul tengah "Pengaturan" dan panah kembali.
+      - Dikelompokkan rapi dalam tiga kartu berlatar gelap: "MASTER DATA" (Kelola Dompet, Kelola Kategori), "KEAMANAN" (Kunci aplikasi), dan "CADANGAN & PEMULIHAN" (Cadangkan data, Pulihkan data).
+      - Ikon squircle bertint gradasi untuk setiap opsi menu.
+      - Sakelar modern Kunci Aplikasi dengan `Key('switch_kunci_aplikasi')` terintegrasi autentikasi biometrik/PIN perangkat.
+      - Cadangkan & Pulihkan data mempertahankan seluruh fungsi dialog konfirmasi, validasi berkas JSON, pratinjau ringkasan, dan penolakan berkas rusak/>20MB.
+    - **Kelola Dompet (`WalletManagementScreen`):**
+      - Header: Panah kembali, judul "Kelola Dompet", dan tombol tambah melingkar bertint dengan `Key('add_wallet_button')`.
+      - Ikon dompet dipetakan secara cerdas dari nama dompet (kata kunci bank/tunai/e-wallet, fallback dompet umum) terpusat di `lib/theme/wallet_icon_mapping.dart` memanfaatkan palet `wallet_card_style.dart` tanpa mengubah skema database.
+      - Kartu dompet menampilkan squircle ikon bertint gradasi, nama dompet (1 baris dengan ellipsis), Saldo sekarang (hasil kalkulasi real time), dan Saldo awal.
+      - Nominal uang dan nilai saldo menggunakan angka tabular (`FontFeature.tabularFigures()`).
+      - Teks "Saldo awal" dinaikkan terangnya menggunakan `AppColors.walletInitialBalance` agar memenuhi standar kontras WCAG AA (>= 4.5:1), dengan ukuran minimal 12 sp.
+      - Bagian "DIARSIPKAN" di bawah mengelompokkan dompet yang diarsipkan dengan gaya redup, badge "Diarsipkan", serta opsi "Buka Arsip" untuk pemulihan.
+      - Menu popup titik tiga `Key('wallet_menu_<id>')` menyediakan aksi Ubah, Arsipkan/Buka Arsip, dan Hapus (dengan validasi transaksi).
+    - **Responsivitas & Bebas Overflow:** Teruji 100% bebas error RenderFlex overflow pada ukuran layar kecil 360x640 dp maupun 411x891 dp, termasuk nama dompet yang sangat panjang.
+
+15. **Milestone UI-6 (Layar Kelola Kategori Bertema Gelap):**
+    - Redesain layar Kelola Kategori (`CategoryManagementScreen`) mengacu pada `design/kelola_kategori_pengeluaran/*.html` & `.png` serta `design/kelola_kategori_pemasukan/*.html` & `.png` sebagai dua keadaan dari satu layar terpadu dengan tab Pengeluaran dan Pemasukan.
+    - **Header:** Judul tengah "Kelola Kategori", tombol kembali panah, dan tombol tambah (+) melingkar bertint dengan `Key('add_category_button')` yang membuka dialog tambah kategori.
+    - **Segmented Control Pill Tab:** Tab bar `CategorySegmentedTabs` berbentuk kapsul gelap halus yang menghubungkan tab "Pengeluaran" dan "Pemasukan", terintegrasi secara reaktif dengan `TabController` dan `TabBarView`.
+    - **Kartu Kategori (`CategoryManagementCard`):**
+      - Squircle ikon bertint dinamis yang dipetakan dari nama kategori (`AppCategoryIcons`), kategori kustom buatan pengguna memakai ikon netral umum (`Icons.label_outline`), tanpa kolom database baru.
+      - Nama kategori satu baris dengan pemotongan ellipsis (`TextOverflow.ellipsis`).
+      - Menu popup titik tiga `Key('category_menu_<id>')` dengan aksi Ubah Nama, Arsipkan/Buka Arsip, dan Hapus (bersyarat dengan validasi transaksi).
+    - **Daftar Tetap Lazy:** Menggunakan `ListView.builder` yang sepenuhnya lazy, efisien dalam alokasi memori saat kategori bertambah banyak.
+    - **Pengelompokan Arsip:** Kategori yang diarsipkan tampil terpisah di bagian "DIARSIPKAN" di bawah dengan gaya redup, badge "Diarsipkan", serta opsi pemulihan ("Buka Arsip").
+    - **Dialog & SnackBar Bertema Gelap:** `CategoryAddDialog`, `CategoryEditDialog`, `CategoryCannotDeleteDialog`, dan `CategoryConfirmDeleteDialog` mengadopsi token tema gelap terpadu, menjaga seluruh key widget dan validasi nama kosong/kembar dalam kelompok tipe yang sama.
+
+17. **Milestone UI-8 (Ikon dan Warna Dompet):**
+    - Skema database dinaikkan ke versi 4 dengan penambahan dua kolom teks nullable (`icon_key` dan `color_key`) pada tabel `wallets`. Migrasi `onUpgrade` dari 3 ke 4 (serta rantai lengkap 1->4) berjalan otomatis via `m.addColumn`, menjaga data lama tetap utuh dengan kedua kolom baru bernilai NULL. Tabel `categories`, `transactions`, dan rumus saldo tidak diubah.
+    - Registry terpusat `WalletStyleRegistry` di `lib/theme/wallet_style.dart` memuat tepat 3 ikon Material Icons (`'uang'` -> `Icons.payments`, `'dompet'` -> `Icons.account_balance_wallet`, `'bank'` -> `Icons.account_balance`) sebagai `const IconData` dalam map statis, serta memakai ulang palet 12 warna dari UI-7 (`CategoryStyleRegistry.colors`) tanpa duplikasi.
+    - Satu fungsi resolusi tunggal `WalletStyleRegistry.resolveWalletStyle` diterapkan di seluruh aplikasi: kartu Kelola Dompet (`WalletManagementCard`), baris akun Buku Kas (`BukuKasWalletBar`), pemilih sumber dana Layar Catat (`CatatWalletSelector`), dan pratinjau live di form dompet. Aturan resolusi: jika `iconKey` dan/atau `colorKey` valid di registry, pakai pilihan pengguna; jika null atau tidak dikenal, fallback mulus ke pemetaan nama bawaan (`AppWalletIconMapping.getMapping`).
+    - Layar penuh `WalletFormScreen` menggantikan `WalletFormDialog` untuk tombol (+) dan menu "Ubah" di Kelola Dompet. Menyediakan pratinjau live squircle 48x48 dp bertint gradasi + nama + saldo, input nama dompet dengan penghitung 0/30 dan batas 30 karakter, input saldo awal (angka), baris 3 pilihan ikon (touch target >= 48x48 dp), grid 12 bulatan warna bergradasi dengan centang putih, serta tombol Simpan di `bottomNavigationBar`. Menjaga kompatibilitas penuh key widget untuk testing (`wallet_name_input`, `wallet_name_edit_input`, `wallet_balance_input`, `wallet_balance_edit_input`, `wallet_save_button`, `wallet_update_button`, `wallet_icon_$key`, `wallet_color_$key`).
+    - Cadangan data dinaikkan ke `formatVersion: 3` (menyertakan `iconKey` dan `colorKey` dompet). Fitur impor mendukung `formatVersion: 1`, `2` (kunci dompet diisi null), dan `3`. Kunci ikon atau warna dompet yang tidak dikenal otomatis disanitasi menjadi null (fallback aman tanpa menolak berkas).
+
 ### B. Hal yang Belum Dikerjakan
 1. **Sinkronisasi Cloud & Enkripsi Cadangan:**
    - Sinkronisasi otomatis ke cloud dan enkripsi berkas cadangan (Tahap 2).
@@ -227,45 +295,41 @@ Dokumen ini berisi spesifikasi kebutuhan minimal (Minimum Viable Product / MVP) 
 - `build_runner: ^2.15.1` (runner generator Dart - dev dependency)
 
 ### D. Hasil `flutter test` Terakhir
-- **Total Test:** 104
-- **Lulus:** 104 (100%)
+- **Total Test:** 167
+- **Lulus:** 167 (100%)
 - **Gagal:** 0
 - **Cakupan Pengujian:**
-  - `app_lock_test.dart` (9 test):
-    - (1) Sakelar aktif membuat aplikasi terkunci saat dibuka dari kondisi tertutup (cold start).
-    - (2) Autentikasi gagal: aplikasi tetap terkunci.
-    - (3) Autentikasi sukses: aplikasi berhasil dibuka.
-    - (4) Kembali dari latar belakang di bawah/sampai 30 detik (uji 25s dan 30s) tidak mengunci.
-    - (5) Kembali dari latar belakang di atas 30 detik (uji 31s) mengunci aplikasi.
-    - (6) Perangkat tanpa layar kunci tidak bisa mengaktifkan sakelar (menolak dan menampilkan alasan).
-    - (7) Mengaktifkan sakelar mewajibkan autentikasi berhasil dulu.
-    - (8) Mematikan sakelar mewajibkan autentikasi berhasil dulu.
-    - (9) Sakelar aktif lalu layar kunci dihapus dari OS: aplikasi tetap terbuka dan menampilkan pesan pemberitahuan.
-  - `app_lock_widget_test.dart` (5 test):
-    - (1) Saat terkunci, isi aplikasi tidak terlihat; menampilkan LockScreen polos dengan tombol "Buka".
-    - (2) Autentikasi gagal tetap menampilkan LockScreen; sukses membuka dan menampilkan isi aplikasi.
-    - (3) Layar Pengaturan memuat sakelar Kunci aplikasi; mengaktifkan & mematikan mewajibkan autentikasi.
-    - (4) Perangkat tanpa layar kunci: sakelar tidak bisa aktif dan menampilkan pesan SnackBar yang jelas.
-    - (5) Layar kunci perangkat dihapus saat sakelar aktif: aplikasi tetap terbuka dan menampilkan banner pemberitahuan yang dapat ditutup.
-  - `daily_grouping_test.dart` (15 test):
-    - (a) Pengelompokan harian: transaksi di dua hari berbeda menghasilkan dua kelompok urut terbaru di atas, urutan transaksi intraday terbaru di atas, kalkulasi subtotal harian (pemasukan - pengeluaran), pengecualian transfer dari subtotal harian, peniadaan subtotal untuk hari berisi transfer saja (`subtotal == null`), pelabelan "HARI INI, 8 OKT 2026", "KEMARIN, 7 OKT 2026", dan singkatan kapital baku bulan lainnya ("6 OKT 2026", "17 AGU 2026").
-    - (b) Invarian matematika: verifikasi kesamaan jumlah seluruh subtotal harian satu bulan dengan Selisih bulanan di kartu ringkasan (`sum(dailySubtotals) == netCashFlow`), baik dalam kondisi selisih positif maupun negatif.
-    - (c) Widget test: kartu ringkasan 3 kolom sama lebar (`Expanded flex: 1`), `FittedBox(scaleDown)`, pemisah vertikal penuh, selisih negatif merah dengan tanda minus (`- Rp ...`), selisih positif teal (`Rp ...`), tautan "Lihat rincian pengeluaran" di baris tersendiri rata kanan, baris transaksi tanpa tanggal dan tap membuka form edit `TransactionFormScreen`, serta penampilan subtotal harian hijau (+), merah (-), dan tidak ada subtotal untuk hari berisi transfer saja.
-  - `expense_breakdown_test.dart` (6 test): Urutan kategori dari terbesar, kalkulasi persen 1 desimal (kasus 58,5 / 24,4 / 17,1 dan total 205.000), pengecualian transfer dan pemasukan, retensi kategori terarsip, penanganan bulan kosong, integritas kesamaan total dengan ringkasan bulanan Buku Kas, dan akumulasi beberapa transaksi dalam satu kategori.
-  - `expense_breakdown_widget_test.dart` (4 test): Keberadaan tautan "Lihat rincian" di Buku Kas dan alur navigasi ke layar Rincian Pengeluaran, visualisasi baris per kategori terurut dengan nominal, persen, dan batang proporsional, pesan kondisi kosong yang jelas saat bulan tanpa pengeluaran, dan sinkronisasi perpindahan bulan dua arah ke Buku Kas.
-  - `catat_cursor_test.dart` (4 test): Perilaku kursor kedip ~530 ms per fase dengan transisi halus opacity, reset instan ke opacity 1.0 dan mulai ulang siklus saat keypad ditekan, penghormatan pengaturan Android "kurangi animasi" (`disableAnimations`), dan pembersihan animasi (`dispose`) saat layar ditutup.
-  - `backup_service_test.dart` (21 test): Penamaan berkas YYYY-MM-DD, round-trip serialisasi objek utuh, kalkulasi ringkasan termasuk `exportedAt` & `exportedAtText`, serta pengujian penolakan menyeluruh (JSON rusak, root non-objek, missing fields, formatVersion asing/non-integer, tanggal ekspor rusak, saldo non-integer, ID duplikat, tipe kategori salah, nominal pecahan/string, nominal <= 0, foreign key wallet/category tidak terdaftar di berkas, transfer ke dompet yang sama / target tidak ada, file .json sembarang yang isinya bukan backup, dan penolakan file > 20 MB).
-  - `backup_restore_db_test.dart` (3 test):
-    - (a) Round-trip ekspor dari database berdata lalu impor ke database kosong menghasilkan seluruh saldo dompet dan ringkasan bulanan yang sama persis.
-    - (b) Penolakan berkas cacat di level state & DB tidak mengubah data lama pada semua kasus (JSON rusak, versi asing, walletId tidak ada, nominal bukan integer).
-    - (c) Atomisitas transaksi: kegagalan di tengah proses pemulihan (simulasi foreign key failure) di-rollback utuh tanpa menyisakan data setengah jadi.
-  - `backup_restore_widget_test.dart` (7 test): Tampilan menu di Pengaturan, integrasi bagikan berkas `catatan_keuangan_YYYY-MM-DD.json` dengan `fileNameOverrides`, penolakan berkas rusak via dialog, alur pratinjau ringkasan dengan tanggal ekspor dari file, pemulihan backup valid dengan nama sembarang (.bin / acak) via `FileType.any`, penolakan file .json sembarang non-backup, dan penolakan berkas di atas 20 MB sebelum dibaca.
-  - `migration_test.dart` (1 test): Migrasi skema SQLite v1 ke v2, penambahan kolom `isArchived`, retensi data lama, dan integritas pembaruan.
-  - `database_test.dart` (6 test): Seed awal 3 dompet saldo 0, operasi CRUD transaksi & foreign key, integrasi persistence & hitung ulang saldo, serta CRUD dompet & kategori di level repository.
-  - `finance_calculator_test.dart` (3 test): Rumus saldo dompet, transfer antar-dompet, ringkasan bulanan, dan filter bulan.
-  - `finance_state_test.dart` (13 test): Operasi transaksi, memori dompet terakhir, hitung ulang saldo saat ubah saldo awal, validasi nama kembar/kosong, pencegahan hapus dompet/kategori berelasi transaksi, dan isolasi dompet/kategori arsip.
-  - `milestone_5_widget_test.dart` (5 test): Alur UI lengkap dari header Buku Kas ke Pengaturan, ubah saldo awal BCA dan dampaknya di Buku Kas, validasi form dompet, pencegahan hapus permanen & tawaran arsip, serta penyembunyian item arsip di form Catat Transaksi.
-  - `widget_test.dart` (2 test): Smoke test layar utama Buku Kas dan pembukaan layar form Catat Transaksi via tombol Catat.
+  - `milestone_ui8_test.dart` (11 test):
+    - Uji registry memuat 3 ikon Material Icons dan memakai ulang 12 warna dari UI-7.
+    - Uji fungsi resolusi gaya dompet: pilihan pengguna mengalahkan pemetaan nama bawaan; null/tidak dikenal fallback ke pemetaan nama.
+    - Uji ekspor ke JSON memuat formatVersion 3 serta iconKey dan colorKey dompet.
+    - Uji impor formatVersion 1 dan 2 tetap berhasil dengan iconKey dan colorKey bernilai null.
+    - Uji sanitasi kunci dompet tidak dikenal (fallback ke null tanpa error).
+    - Uji penolakan formatVersion di luar 1, 2, dan 3.
+    - Uji widget Tambah Dompet: tampilan awal, counter 0/30, pilihan 3 ikon, 12 warna, dan pratinjau live.
+    - Uji validasi nama dompet: kosong, > 30 karakter, dan kembar ditolak dengan error yang benar.
+    - Uji widget Ubah Dompet: form terisi data lama dan key widget kompatibel backward (`wallet_name_edit_input`, `wallet_balance_edit_input`, `wallet_update_button`).
+    - Uji responsivitas pada resolusi 360x640 dan 411x891 dp tanpa overflow.
+  - `milestone_ui7_test.dart` (9 test)
+  - `milestone_ui6_test.dart` (11 test)
+  - `milestone_ui5_test.dart` (10 test)
+  - `milestone_ui4_test.dart` (10 test)
+  - `milestone_ui3_test.dart` (10 test)
+  - `app_lock_test.dart` (9 test)
+  - `app_lock_widget_test.dart` (5 test)
+  - `daily_grouping_test.dart` (15 test)
+  - `expense_breakdown_test.dart` (6 test)
+  - `expense_breakdown_widget_test.dart` (4 test)
+  - `catat_cursor_test.dart` (4 test)
+  - `backup_service_test.dart` (21 test)
+  - `backup_restore_db_test.dart` (3 test)
+  - `backup_restore_widget_test.dart` (7 test)
+  - `migration_test.dart` (3 test: migrasi v1->v4, v2->v4, dan v3->v4)
+  - `database_test.dart` (6 test)
+  - `finance_calculator_test.dart` (3 test)
+  - `finance_state_test.dart` (13 test)
+  - `milestone_5_widget_test.dart` (5 test)
+  - `widget_test.dart` (2 test)
 
 ### E. Asumsi & Bug yang Diketahui
 1. **Penyimpanan Permanen Aktif:** Data tersimpan lokal di SQLite perangkat Android (`catatan_keuangan.sqlite`). Data dummy hanya dipakai pada pengujian in-memory.
@@ -281,3 +345,22 @@ Dokumen ini berisi spesifikasi kebutuhan minimal (Minimum Viable Product / MVP) 
 11. **Penguncian Aplikasi & Timeout Latar Belakang:** Perhitungan timeout 30 detik diukur dari waktu aplikasi beralih ke status `paused`/`hidden` hingga `resumed`. Autentikasi biometrik menggunakan konfigurasi `biometricOnly: false` sehingga perangkat dapat menggunakan PIN, pola, atau sandi layar kunci sebagai cadangan resmi.
 12. **Perlindungan Tampilan Aplikasi Terbaru:** Saat terkunci, hierarki widget aplikasi dibungkus oleh `AppLockWrapper` yang menampilkan `LockScreen` polos dengan tombol "Buka" sehingga pratinjau snapshot sistem OS Android pada tampilan Recent Apps tidak membocorkan informasi finansial apa pun.
 13. **Penanganan Layar Kunci Dihapus:** Jika layar kunci perangkat dihapus setelah fitur aktif, sistem mendeteksi `isDeviceSupported() == false`, menjaga aplikasi tetap terbuka (`isLocked = false`) dan menampilkan banner peringatan di bagian atas layar agar pengguna tidak kehilangan akses terhadap datanya.
+14. **Tema Gelap Tunggal (UI-3):** Seluruh antarmuka aplikasi menggunakan tema gelap modern dengan sistem token terpusat (`AppTheme`, `AppColors`, `AppTypography`, `AppDimens`, `AppGradients`). Komponen visual tidak memiliki hardcoded nilai warna mentah atau dimensi acak. Layar Catat Transaksi, Pengaturan, Kelola Dompet/Kategori, dan dialog mengadopsi token gelap yang seragam tanpa ada area putih/krem tersisa. Font offline `Plus Jakarta Sans` digunakan di seluruh aplikasi dengan fitur `FontFeature.tabularFigures()` pada teks nominal.
+15. **Layar Catat Transaksi Fleksibel (UI-4):** Seluruh elemen form Catat Transaksi disusun secara adaptif menggunakan `SingleChildScrollView` dengan pembatas `IntrinsicHeight` dan `Spacer()` fleksibel antara input catatan dan keypad. Pada layar tinggi (411x891 dp), keypad dan tombol CTA tersemat di bawah (*pinned to bottom*) meniru perilaku `justify-between` pada mockup HTML. Pada layar rendah/sempit (360x640 dp), area form dapat digulir mulus tanpa memicu `RenderFlex overflow` sama sekali. Input catatan memakai satu border tunggal untuk menghilangkan cacat visual kotak bersarang pada desain awal, dan keypad dibersihkan dari label huruf sekunder (ABC/DEF) agar fokus penuh pada angka nominal.
+16. **Layar Pengaturan & Kelola Dompet Bertema Gelap (UI-5):** Seluruh elemen visual layar Pengaturan dan Kelola Dompet mengadopsi tema gelap terpadu mengacu pada desain HTML/PNG. Kartu dompet menampilkan ikon squircle bertint yang dipetakan secara terpusat dari nama dompet (kata kunci bank/tunai/e-wallet/fallback), saldo sekarang (real time), dan saldo awal yang dinaikkan kontrasnya memenuhi standar WCAG AA (>= 4.5:1). Teks nominal menggunakan angka tabular (`FontFeature.tabularFigures()`). Nama dompet panjang diamankan satu baris dengan ellipsis. Dompet yang diarsipkan dikelompokkan terpisah di bagian "DIARSIPKAN" di bawah dengan badge dan opsi pemulihan ("Buka Arsip"). Semua dialog dan SnackBar konsisten mengikuti tema gelap dan 100% bebas overflow pada layar 360x640 dp dan 411x891 dp.
+17. **Layar Kelola Kategori Bertema Gelap (UI-6):** Layar Kelola Kategori menyatukan dua keadaan mockup (Pengeluaran dan Pemasukan) dalam satu layar dengan tab `CategorySegmentedTabs`. Ikon kategori dipetakan secara dinamis dari nama kategori menggunakan `AppCategoryIcons` dengan tinting squircle, nama kategori panjang diamankan satu baris dengan ellipsis, dan daftar dirender secara lazy (`ListView.builder`). Kategori yang diarsipkan dikelompokkan di bagian "DIARSIPKAN" dengan gaya redup dan opsi "Buka Arsip". Seluruh dialog (tambah, ubah, tolak hapus, konfirmasi hapus) dan SnackBar mengikuti token tema gelap. Bebas overflow pada layar 360x640 dp dan 411x891 dp.
+18. **Ikon dan Warna Kategori (UI-7):**
+    - Skema database dinaikkan ke versi 3 dengan penambahan dua kolom teks nullable (`icon_key` dan `color_key`) pada tabel `categories`. Migrasi `onUpgrade` dari 2 ke 3 berjalan otomatis via `m.addColumn`, menjaga data lama tetap utuh dengan kedua kolom baru bernilai NULL. Tabel `wallets` dan `transactions` tidak diubah.
+    - Registry terpusat `CategoryStyleRegistry` di `lib/theme/category_style.dart` memuat 41 ikon Material Icons sebagai `const IconData` dalam map statis untuk memastikan *icon tree shaking* Flutter berjalan bersih tanpa peringatan saat `flutter build apk --release`.
+    - Palet 12 warna gradasi (`violet`, `cyan`, `emerald`, `amber`, `rose`, `blue`, `orange`, `pink`, `indigo`, `teal`, `lime`, `slate`) didefinisikan dengan pasangan gradasi untuk pemilih dan tinting (latar belakang, bingkai, ikon) di `AppColors`.
+    - Satu fungsi resolusi tunggal `CategoryStyleRegistry.resolveCategoryStyle` diterapkan di seluruh aplikasi: daftar Kelola Kategori (`CategoryManagementCard`), baris transaksi di Buku Kas (`BukuKasTransactionRow`), pemilih kategori di Layar Catat (`CatatCategorySelector`), dan baris laporan Rincian Pengeluaran (`ExpenseCategoryRow`). Aturan resolusi: jika `iconKey`/`colorKey` terisi dan valid, gunakan kunci tersebut; jika kosong atau tidak dikenal, gunakan pemetaan nama bawaan (`category_icon_mapping.dart`).
+    - Layar penuh `CategoryFormScreen` menggantikan dialog lama untuk tambah dan ubah kategori. Komponen disusun dari atas: pratinjau kecil dinamis (squircle ikon + warna + nama yang diketik), pemilih tipe Pengeluaran/Pemasukan (dengan `FittedBox` mencegah teks terpotong; hanya saat tambah, saat ubah tampil teks read-only), input nama dengan penghitung 0/30 dan batas 30 karakter, grid 5 kolom ikon dengan pembatas sentuh >=48 dp, grid 12 bulatan gradasi warna dengan tanda centang, dan tombol Simpan di `bottomNavigationBar` yang otomatis menyesuaikan saat keyboard terbuka.
+    - Cadangan data dinaikkan ke `formatVersion: 2` (menyertakan `iconKey` dan `colorKey` kategori). Fitur impor mendukung `formatVersion: 1` (kunci diisi null) dan `formatVersion: 2`. Kunci ikon atau warna yang tidak dikenal otomatis disanitasi menjadi null (fallback aman tanpa menolak berkas).
+19. **Ikon dan Warna Dompet (UI-8):**
+    - Skema database tabel `wallets` diperluas dengan kolom nullable `icon_key` dan `color_key` (`schemaVersion = 4`). Seluruh rumus saldo kumulatif dan tabel lainnya tetap terjaga tanpa perubahan.
+    - 3 ikon dompet (`Icons.payments`, `Icons.account_balance_wallet`, `Icons.account_balance`) didefinisikan sebagai `const IconData` statis untuk memastikan *icon tree shaking* Flutter berjalan bersih dengan pengurangan ukuran aset font 99,3% saat build release.
+    - Palet 12 warna diimpor langsung dari UI-7 (`CategoryStyleRegistry.colors`) tanpa redundansi deklarasi warna.
+    - Form dompet `WalletFormScreen` berjalan layar penuh dengan pratinjau live, penghitung 0/30, touch target >= 48x48 dp, validasi nama kosong, batas 30 karakter, dan pencegahan nama kembar (case-insensitive, trimmed) dengan izin nama yang sama pada mode ubah.
+    - Cadangan formatVersion 3 mendukung ekspor dan impor dompet ber-ikon dan ber-warna, dengan backward compatibility penuh untuk berkas formatVersion 1 dan 2.
+
+

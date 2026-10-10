@@ -381,7 +381,7 @@ void main() {
       expect(selisihTextWidget.style?.color, AppColors.selisihTeal);
     });
 
-    testWidgets('Kartu ringkasan memiliki 3 kolom lebar sama (Expanded flex: 1) dan FittedBox(scaleDown)', (tester) async {
+    testWidgets('Kartu ringkasan memiliki 2 kartu kecil berdampingan (Expanded flex: 1) dan FittedBox(scaleDown)', (tester) async {
       final state = FinanceState(
         initialWallets: testWallets,
         initialCategories: testCategories,
@@ -394,18 +394,18 @@ void main() {
       final heroFinder = find.byType(BukuKasHeroSummary);
       expect(heroFinder, findsOneWidget);
 
-      // Verifikasi 3 kolom Expanded flex: 1
+      // Verifikasi 2 kartu kecil berdampingan Expanded flex: 1 (Pemasukan & Selisih)
       final expandedColumns = find.descendant(
         of: heroFinder,
         matching: find.byType(Expanded),
       );
-      expect(expandedColumns, findsNWidgets(3));
+      expect(expandedColumns, findsNWidgets(2));
       for (final element in expandedColumns.evaluate()) {
         final exp = element.widget as Expanded;
         expect(exp.flex, 1);
       }
 
-      // Verifikasi 3 FittedBox dengan fit scaleDown
+      // Verifikasi 3 FittedBox dengan fit scaleDown (Pengeluaran, Pemasukan, Selisih)
       final fittedBoxes = find.descendant(
         of: heroFinder,
         matching: find.byType(FittedBox),
@@ -437,6 +437,13 @@ void main() {
     });
 
     testWidgets('Baris transaksi tidak memuat tanggal, dan tap membuka form edit', (tester) async {
+      tester.view.physicalSize = const Size(800, 1000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
       final state = FinanceState(
         initialWallets: testWallets,
         initialCategories: testCategories,
@@ -456,12 +463,12 @@ void main() {
       await tester.pumpWidget(MyApp(initialState: state));
       await tester.pumpAndSettle();
 
-      // Nama kategori dan catatan muncul
-      expect(find.text('Belanja'), findsOneWidget);
+      // Nama kategori (huruf kapital kecil) dan catatan muncul
+      expect(find.text('BELANJA'), findsOneWidget);
       expect(find.text('Beli buku tulis'), findsOneWidget);
 
       // Tap baris transaksi untuk membuka form edit
-      await tester.tap(find.text('Belanja'));
+      await tester.tap(find.text('Beli buku tulis'));
       await tester.pumpAndSettle();
 
       // Verifikasi layar edit transaksi terbuka

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import '../models/category.dart';
 import '../theme/app_theme.dart';
+import '../theme/category_style.dart';
 
-// Komponen pemilih kategori cepat dengan kontras yang ditingkatkan
+// Komponen pemilih kategori cepat sesuai design/catat.html
 class CatatCategorySelector extends StatelessWidget {
   final List<Category> categories;
   final String? selectedCategoryId;
@@ -28,44 +29,61 @@ class CatatCategorySelector extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text('KATEGORI CEPAT', style: AppTypography.labelCaps),
-            Text(_getSelectedCategoryName(), style: AppTypography.bodySm),
+            const Text('KATEGORI CEPAT', style: AppTypography.catatSectionTitle),
+            Text(_getSelectedCategoryName(), style: AppTypography.catatSelectedCategory),
           ],
         ),
-        const SizedBox(height: AppDimens.spaceSm),
+        const SizedBox(height: AppDimens.spaceSm - 2),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(
             children: categories.map((cat) {
               final isSelected = cat.id == selectedCategoryId;
+              final catStyle = CategoryStyleRegistry.resolveCategoryStyle(category: cat);
 
               return Padding(
                 padding: const EdgeInsets.only(right: AppDimens.spaceSm),
-                child: InkWell(
-                  onTap: () => onCategorySelected(cat.id),
-                  borderRadius: BorderRadius.circular(AppDimens.radiusDefault),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppDimens.spaceMd,
-                      vertical: AppDimens.spaceSm,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? AppColors.primary
-                          : AppColors.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(AppDimens.radiusDefault),
-                      border: Border.all(
-                        color: isSelected
-                            ? AppColors.primary
-                            : AppColors.outlineVariant,
-                        width: AppDimens.borderWidthThin,
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => onCategorySelected(cat.id),
+                    borderRadius: BorderRadius.circular(AppDimens.radiusLg),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 150),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppDimens.spaceMd - 2,
+                        vertical: AppDimens.spaceSm - 1,
                       ),
-                    ),
-                    child: Text(
-                      cat.name,
-                      style: isSelected
-                          ? AppTypography.labelMd.copyWith(color: AppColors.onPrimary)
-                          : AppTypography.labelMd.copyWith(color: AppColors.onSurface),
+                      decoration: BoxDecoration(
+                        gradient: isSelected ? AppGradients.catatCategoryActive : null,
+                        color: isSelected ? null : AppColors.surfaceContainer,
+                        borderRadius: BorderRadius.circular(AppDimens.radiusLg),
+                        border: Border.all(
+                          color: isSelected
+                              ? AppColors.catatCategoryActiveBorder
+                              : AppColors.borderFaint,
+                          width: AppDimens.borderWidthThin,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            catStyle.icon,
+                            size: 15,
+                            color: isSelected
+                                ? AppColors.secondary
+                                : AppColors.onSurfaceVariant,
+                          ),
+                          const SizedBox(width: AppDimens.spaceXs + 2),
+                          Text(
+                            cat.name,
+                            style: isSelected
+                                ? AppTypography.catatCategoryActive
+                                : AppTypography.catatCategoryInactive,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),

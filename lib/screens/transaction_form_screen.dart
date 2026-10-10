@@ -283,12 +283,22 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
+      backgroundColor: AppColors.surface,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      centerTitle: true,
       title: Text(
         _isEditing ? 'Edit Transaksi' : 'Catat Transaksi',
-        style: AppTypography.headlineSm,
+        style: const TextStyle(
+          fontFamily: AppFonts.plusJakartaSans,
+          fontSize: 17,
+          fontWeight: FontWeight.w700,
+          color: Colors.white,
+          letterSpacing: -0.2,
+        ),
       ),
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back, size: AppDimens.iconMedium),
+        icon: const Icon(Icons.arrow_back, size: 22, color: AppColors.onSurface),
         onPressed: () => Navigator.pop(context),
       ),
       actions: [
@@ -297,7 +307,9 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
             icon: const Icon(Icons.delete_outline, color: AppColors.error),
             tooltip: 'Hapus Transaksi',
             onPressed: _confirmDelete,
-          ),
+          )
+        else
+          const SizedBox(width: 48),
       ],
     );
   }
@@ -312,68 +324,79 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
       backgroundColor: AppColors.surface,
       appBar: _buildAppBar(),
       body: SafeArea(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            Row(
-              children: [
-                if (!_isEditing)
-                  const Text('Tambah Transaksi', style: AppTypography.hiddenTestHelper),
-                const Text('Simpan Transaksi', style: AppTypography.hiddenTestHelper),
-              ],
-            ),
-            CatatTypeTabs(
-              selectedType: _selectedType,
-              onTypeChanged: _onTypeChanged,
-            ),
-            CatatAmountDisplay(
-              type: _selectedType,
-              formattedAmount: _getFormattedAmount(),
-              dateText: _formatDateText(_selectedDate),
-              onDateTap: _pickDate,
-              keypadTapEpoch: _keypadTapEpoch,
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppDimens.margin,
-                vertical: AppDimens.spaceSm,
-              ),
-              child: Column(
-                children: [
-                  if (_selectedType != TransactionType.transfer) ...[
-                    CatatCategorySelector(
-                      categories: availableCategories,
-                      selectedCategoryId: _selectedCategoryId,
-                      onCategorySelected: (catId) => setState(() => _selectedCategoryId = catId),
+        top: false,
+        bottom: true,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              padding: EdgeInsets.zero,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: IntrinsicHeight(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: AppDimens.margin),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Row(
+                          children: [
+                            if (!_isEditing)
+                              const Text('Tambah Transaksi', style: AppTypography.hiddenTestHelper),
+                            const Text('Simpan Transaksi', style: AppTypography.hiddenTestHelper),
+                          ],
+                        ),
+                        const SizedBox(height: AppDimens.spaceXs),
+                        CatatTypeTabs(
+                          selectedType: _selectedType,
+                          onTypeChanged: _onTypeChanged,
+                        ),
+                        const SizedBox(height: AppDimens.spaceSm),
+                        CatatAmountDisplay(
+                          type: _selectedType,
+                          formattedAmount: _getFormattedAmount(),
+                          dateText: _formatDateText(_selectedDate),
+                          onDateTap: _pickDate,
+                          keypadTapEpoch: _keypadTapEpoch,
+                        ),
+                        const SizedBox(height: AppDimens.spaceSm),
+                        if (_selectedType != TransactionType.transfer) ...[
+                          CatatCategorySelector(
+                            categories: availableCategories,
+                            selectedCategoryId: _selectedCategoryId,
+                            onCategorySelected: (catId) => setState(() => _selectedCategoryId = catId),
+                          ),
+                          const SizedBox(height: AppDimens.spaceSm),
+                        ],
+                        CatatWalletSelector(
+                          type: _selectedType,
+                          wallets: wallets,
+                          selectedWalletId: _selectedWalletId,
+                          selectedTargetWalletId: _selectedTargetWalletId,
+                          onWalletSelected: (wId) => setState(() => _selectedWalletId = wId),
+                          onTargetWalletSelected: (wId) => setState(() => _selectedTargetWalletId = wId),
+                        ),
+                        const SizedBox(height: AppDimens.spaceSm),
+                        CatatNoteInput(controller: _noteController),
+                        const Spacer(),
+                        const SizedBox(height: AppDimens.spaceSm),
+                        CatatNumericKeypad(
+                          onDigit: _onDigit,
+                          onQuickZeros: _onQuickZeros,
+                          onBackspace: _onBackspace,
+                        ),
+                        const SizedBox(height: AppDimens.spaceSm),
+                        CatatSubmitButton(
+                          label: _getSubmitButtonLabel(),
+                          onSubmit: _saveTransaction,
+                        ),
+                        const SizedBox(height: AppDimens.spaceSm),
+                      ],
                     ),
-                    const SizedBox(height: AppDimens.spaceSm),
-                  ],
-                  CatatWalletSelector(
-                    type: _selectedType,
-                    wallets: wallets,
-                    selectedWalletId: _selectedWalletId,
-                    selectedTargetWalletId: _selectedTargetWalletId,
-                    onWalletSelected: (wId) => setState(() => _selectedWalletId = wId),
-                    onTargetWalletSelected: (wId) => setState(() => _selectedTargetWalletId = wId),
                   ),
-                  const SizedBox(height: AppDimens.spaceSm),
-                  CatatNoteInput(controller: _noteController),
-                  const SizedBox(height: AppDimens.spaceSm),
-                  CatatNumericKeypad(
-                    onDigit: _onDigit,
-                    onQuickZeros: _onQuickZeros,
-                    onBackspace: _onBackspace,
-                  ),
-                  const SizedBox(height: AppDimens.spaceSm),
-                  CatatSubmitButton(
-                    label: _getSubmitButtonLabel(),
-                    onSubmit: _saveTransaction,
-                  ),
-                  const SizedBox(height: AppDimens.spaceMd),
-                ],
+                ),
               ),
-            ),
-          ],
+            );
+          },
         ),
       ),
     );
