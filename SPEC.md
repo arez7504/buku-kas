@@ -293,7 +293,25 @@ Dokumen ini berisi spesifikasi kebutuhan minimal (Minimum Viable Product / MVP) 
     - State setiap tab dipertahankan saat berpindah tab dan kembali (posisi gulir dan bulan terpilih di Beranda tidak hilang) menggunakan `IndexedStack` dan `PageStorageKey`.
     - Tombol back sistem Android ditangani via `PopScope`: dari tab Riwayat/Statistik/Pengaturan kembali ke Beranda (`currentIndex = 0`); dari Beranda mengizinkan penutupan aplikasi. Sub-layar yang dibuka lewat push ditutup terlebih dahulu sebelum back berpindah tab.
     - Layar kunci `AppLockWrapper` tetap membungkus seluruh kerangka navigasi, memastikan tidak ada konten maupun bilah navigasi yang bocor saat terkunci.
-    - Desain bilah navigasi bawah: tinggi nyaman (64 dp), area sentuh minimal 48x48 dp, label teks selalu terlihat (>= 12 sp), tab aktif ditandai ikon, warna, dan bobot teks berbeda (memenuhi kontras WCAG AA >= 4.5:1), tombol Catat tidak menutupi label tab pada layar sempit 360 dp, menghormati Safe Area / gesture bar, tanpa BackdropFilter/blur, dan seluruh styling menggunakan token terpusat di `lib/theme/app_theme.dart`.
+22. **Milestone NAV-2 (Beranda, Bagian Atas Baru - Saldo Total):**
+    - Redesain bagian atas layar Beranda (`HistoryScreen`) menggantikan hero summary lama dengan urutan komponen terstruktur:
+      1. Header (`BukuKasHeader`): Ikon dompet dan judul tunggal "Buku Kas" (pemilih bulan dipindah ke bawah).
+      2. Kartu Hero "Saldo Total" (`BukuKasSaldoTotalCard`, `Key('saldo_total_card')`): Label "SALDO TOTAL", nominal besar satu baris dengan angka tabular dan `FittedBox` scaleDown (`Key('saldo_total_amount')`), keterangan kecil "Semua dompet aktif" (>= 12 sp, memenuhi standar kontras AA), saldo negatif tampil dengan tanda minus dan warna merah `AppColors.expenseRed`.
+      3. Bagian Bulan (`BukuKasMonthSection`): Pemilih bulan berbentuk pill (`< Bulan Tahun >`), dua kartu berdampingan berukuran lebar sama (`Expanded` flex: 1) untuk Pemasukan (`Key('bulan_pemasukan')`) dan Pengeluaran (`Key('bulan_pengeluaran')`), baris tipis Selisih (`Key('bulan_selisih')`) dengan warna teal saat positif/nol dan merah minus saat negatif, serta tautan "Lihat rincian pengeluaran" (`Key('lihat_rincian_link')`).
+      4. Bagian "Akun & Dompet" (`BukuKasWalletBar`): Deretan kartu dompet yang dapat digulir horizontal dipindahkan ke bawah bagian bulan, dengan header adaptif ber-`Flexible` bebas overflow.
+      5. Daftar transaksi harian (`BukuKasDayGroup`): Tetap dipertahankan di bawah seksi dompet tanpa perubahan format.
+    - **Perhitungan Total Balance (`FinanceCalculator.calculateTotalBalance` & `FinanceState.totalBalance`):**
+      - Menjumlahkan seluruh saldo dompet aktif (`!wallet.isArchived`). Saldo masing-masing dompet mengikuti rumus standar (saldo awal + pemasukan - pengeluaran +/- transfer). Dompet terarsip tidak dihitung.
+      - Transfer antar dua dompet aktif tidak mengubah total. Transfer dari dompet aktif ke dompet terarsip mengurangi total sebesar nominal transfer; transfer dari dompet terarsip ke dompet aktif menambah total.
+      - Saldo negatif diperbolehkan dan dijumlahkan apa adanya. Total selalu dihitung secara dinamis dari data, otomatis mencerminkan perubahan saat dompet ditambah, saldo awal diubah, dompet diarsipkan, atau transaksi berubah.
+      - Total bersifat independen terhadap navigasi pemilih bulan.
+    - **Peringatan Arsip Dompet (`WalletArchiveWarningDialog`):**
+      - Saat pengguna mengarsipkan dompet yang saldonya BUKAN nol dari layar Kelola Dompet (`WalletManagementScreen`), dialog konfirmasi muncul menyebutkan nama dompet, nominal saldonya, dan peringatan bahwa Saldo Total akan berkurang sebesar nominal tersebut. Tombol "Batal" membatalkan aksi, tombol "Arsipkan" (`Key('confirm_archive_wallet_button')`) memproses pengarsipan.
+      - Dompet bersaldo nol langsung diarsipkan tanpa dialog tambahan.
+      - Memulihkan dompet dari arsip ("Buka Arsip") dilakukan langsung tanpa dialog.
+    - **Aksesibilitas & Responsivitas:**
+      - Bebas error RenderFlex overflow pada resolusi 360x640 dp dan 411x891 dp, termasuk dengan skala teks 1.5/2.0 dan nominal ekstrem (contoh Rp 123.456.789.012).
+      - Tanpa package eksternal baru, tanpa BackdropFilter/blur, dan seluruh styling menggunakan token tema terpusat di `lib/theme/app_theme.dart`.
 
 ### B. Hal yang Belum Dikerjakan
 1. **Sinkronisasi Cloud & Enkripsi Cadangan:**
@@ -314,19 +332,22 @@ Dokumen ini berisi spesifikasi kebutuhan minimal (Minimum Viable Product / MVP) 
 - `build_runner: ^2.15.1` (runner generator Dart - dev dependency)
 
 ### D. Hasil `flutter test` Terakhir
-- **Total Test:** 185
-- **Lulus:** 185 (100%)
+- **Total Test:** 199
+- **Lulus:** 199 (100%)
 - **Gagal:** 0
 - **Cakupan Pengujian:**
-  - `milestone_nav1_test.dart` (8 test):
-    - (a) Bilah navigasi tampil dengan empat tab dan tombol Catat; mengetuk tab berpindah layar dengan benar.
-    - (b) Tombol Catat membuka form tanpa bilah; setelah menutup form, bilah kembali dan tab asal tetap aktif.
-    - (c) Tombol back sistem Android dari tab Riwayat, Statistik, dan Pengaturan kembali ke Beranda; dari Beranda mengizinkan pop aplikasi.
-    - (d) Bulan terpilih dan posisi gulir di Beranda bertahan setelah pindah ke tab lain dan kembali.
-    - (e) Pengaturan sebagai tab tidak menampilkan panah kembali; membuka sub-layar Kelola Dompet menyembunyikan bilah navigasi bawah.
-    - (f) Responsivitas layout bebas overflow pada layar 360x640 dp dan 411x891 dp.
-    - (g) Layar kunci membungkus seluruh kerangka navigasi (bilah bawah tidak terlihat saat terkunci).
-    - (h) Aksesibilitas bilah: touch target >= 48x48 dp, ukuran label >= 12 sp, kontras warna label aktif terhadap latar memenuhi rasio WCAG AA (>= 4.5:1).
+  - `milestone_nav2_test.dart` (14 test):
+    - (a) `totalBalance` = jumlah saldo semua dompet aktif pada data uji (mengabaikan dompet terarsip dan menjumlahkan saldo negatif).
+    - (b) Tambah dompet dengan saldo awal 100.000 menaikkan total 100.000; ubah saldo awal mengubah total; arsipkan dompet mengurangi total sebesar saldonya.
+    - (c) Transfer antar dua dompet aktif tidak mengubah total; transfer ke dompet terarsip mengurangi total sebesar nominal; transfer dari dompet terarsip menambah total sebesar nominal.
+    - (d) Pindah bulan: Pemasukan, Pengeluaran, dan Selisih berubah mengikuti bulan terpilih, sedangkan Saldo Total TIDAK berubah.
+    - (e) Saldo Total di layar sama dengan jumlah angka yang tertera di kartu-kartu dompet aktif pada `BukuKasWalletBar`.
+    - (f) Dialog arsip muncul untuk dompet bersaldo bukan nol memuat nama dompet, nominal saldo, dan efek terhadap Saldo Total; Batal membatalkan; dompet bersaldo nol langsung diarsipkan tanpa dialog; pemulihan ("Buka Arsip") langsung tanpa dialog.
+    - (g) Saldo Total negatif tampil merah dengan tanda minus (`- Rp ...`).
+    - Uji urutan tampilan visual: Header -> Saldo Total -> Bagian Bulan -> Akun & Dompet.
+    - Uji tipografi: Label SALDO TOTAL, angka tabular, FittedBox scaleDown, subtitle >= 12 sp.
+    - Uji responsivitas: Layar 360x640 dp dan 411x891 dp dengan nominal ekstrem (Rp 123.456.789.012) dan text scale 1.5/2.0 bebas overflow.
+  - `milestone_nav1_test.dart` (8 test)
   - `milestone_ui9_test.dart` (10 test):
     - Uji total 41 ikon dan kalkulasi dinamis jumlah halaman = 4 (12 ikon/halaman, sisa 5 ikon di halaman 4).
     - Uji token dimensi indikator titik dan rasio kontras >= 3:1 terhadap latar kartu `#141422`.
@@ -402,3 +423,10 @@ Dokumen ini berisi spesifikasi kebutuhan minimal (Minimum Viable Product / MVP) 
     - Navigasi back Android memakai `PopScope`: ketika berada di tab 1, 2, atau 3 (Riwayat, Statistik, Pengaturan), tombol back sistem beralih kembali ke tab Beranda (indeks 0). Dari Beranda, penekanan back keluar dari aplikasi. Sub-layar yang di-push (seperti Kelola Dompet/Kategori, form transaksi) berada di atas Navigator root sehingga back menutup sub-layar terlebih dahulu sebelum PopScope tab dipicu.
     - Form Catat Transaksi dibuka layar penuh di atas kerangka via `Navigator.push`, menyembunyikan bilah navigasi bawah secara alami dan mengembalikannya saat form ditutup tanpa mereset tab asal.
     - Seluruh kerangka navigasi tetap berada di dalam `AppLockWrapper`, sehingga saat status terkunci aktif, `LockScreen` menutupi seluruh layar termasuk bilah bawah tanpa kebocoran data visual.
+
+22. **Saldo Total & Bagian Atas Beranda Baru (NAV-2):**
+    - Saldo Total dihitung secara independen dari bulan terpilih sebagai akumulasi saldo riil semua dompet aktif (`!wallet.isArchived`). Transfer antar dompet aktif bersifat netral (0 dampak pada total). Transfer antara dompet aktif dan terarsip mengubah Saldo Total sesuai arah aliran dana.
+    - Perpindahan bulan di pemilih bulan memperbarui data transaksi bulanan (Pemasukan, Pengeluaran, Selisih, rincian kategori, dan daftar per hari) tanpa mengubah nominal kartu Saldo Total.
+    - Dialog konfirmasi arsip dompet melindungi pengguna dari ketidaksengajaan saat mengarsipkan dompet yang memiliki saldo riil bukan nol, mencegah kebingungan pengguna atas penurunan nilai Saldo Total.
+    - Penataan ulang urutan komponen di Beranda (Header -> Saldo Total -> Bagian Bulan -> Akun & Dompet -> Daftar Transaksi) memberikan hierarki visual yang jelas dari ringkasan global kekayaan (Saldo Total), performa periode berjalan (Bulan), persebaran akun (Dompet), hingga catatan granular (Transaksi Harian).
+

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../logic/finance_state.dart';
 import '../models/wallet.dart';
 import '../theme/app_theme.dart';
+import '../widgets/wallet_archive_dialog.dart';
 import '../widgets/wallet_delete_dialog.dart';
 import '../widgets/wallet_management_card.dart';
 import 'wallet_form_screen.dart';
@@ -74,6 +75,21 @@ class _WalletManagementScreenState extends State<WalletManagementScreen> {
   }
 
   Future<void> _toggleArchive(FinanceState state, Wallet wallet) async {
+    if (!wallet.isArchived) {
+      final balance = state.getWalletBalance(wallet.id);
+      if (balance != 0) {
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (_) => WalletArchiveWarningDialog(
+            walletName: wallet.name,
+            balance: balance,
+          ),
+        );
+        if (confirmed != true) return;
+      }
+    }
+
+    if (!mounted) return;
     final messenger = ScaffoldMessenger.of(context);
     await state.archiveWallet(wallet.id, isArchived: !wallet.isArchived);
     if (!mounted) return;

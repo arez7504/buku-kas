@@ -1,19 +1,18 @@
 import 'package:flutter/material.dart';
-import '../logic/finance_calculator.dart';
 import '../theme/app_theme.dart';
 
-/// Header layar Buku Kas: ikon dompet, judul tunggal "Buku Kas", pemilih bulan berbentuk pil, dan tombol pengaturan
+/// Header layar Buku Kas: ikon dompet bulat bertint gradasi dan judul "Buku Kas" (Milestone NAV-2)
 class BukuKasHeader extends StatelessWidget {
-  final DateTime selectedMonth;
-  final VoidCallback onPreviousMonth;
-  final VoidCallback onNextMonth;
+  final DateTime? selectedMonth;
+  final VoidCallback? onPreviousMonth;
+  final VoidCallback? onNextMonth;
   final VoidCallback? onSettings;
 
   const BukuKasHeader({
     super.key,
-    required this.selectedMonth,
-    required this.onPreviousMonth,
-    required this.onNextMonth,
+    this.selectedMonth,
+    this.onPreviousMonth,
+    this.onNextMonth,
     this.onSettings,
   });
 
@@ -44,53 +43,6 @@ class BukuKasHeader extends StatelessWidget {
     );
   }
 
-  Widget _buildMonthPill() {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surfaceContainerLow,
-        border: Border.all(color: AppColors.borderSubtle),
-        borderRadius: BorderRadius.circular(AppDimens.radiusFull),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          InkWell(
-            borderRadius: BorderRadius.circular(AppDimens.radiusFull),
-            onTap: onPreviousMonth,
-            child: const Padding(
-              padding: EdgeInsets.all(AppDimens.spaceXs),
-              child: Icon(
-                Icons.chevron_left,
-                size: AppDimens.iconSmall,
-                color: AppColors.onSurfaceVariant,
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppDimens.spaceXs),
-            child: Text(
-              FinanceCalculator.formatMonthYear(selectedMonth),
-              style: AppTypography.monthPicker,
-            ),
-          ),
-          InkWell(
-            borderRadius: BorderRadius.circular(AppDimens.radiusFull),
-            onTap: onNextMonth,
-            child: const Padding(
-              padding: EdgeInsets.all(AppDimens.spaceXs),
-              child: Icon(
-                Icons.chevron_right,
-                size: AppDimens.iconSmall,
-                color: AppColors.onSurfaceVariant,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -98,19 +50,10 @@ class BukuKasHeader extends StatelessWidget {
         horizontal: AppDimens.margin,
         vertical: AppDimens.spaceSm,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildWalletTitle(),
-            ],
-          ),
-          const SizedBox(height: AppDimens.spaceSm),
-          Center(
-            child: _buildMonthPill(),
-          ),
+          _buildWalletTitle(),
         ],
       ),
     );

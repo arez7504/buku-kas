@@ -351,6 +351,10 @@ class FinanceState extends ChangeNotifier {
   Map<String, int> get walletBalances =>
       FinanceCalculator.calculateAllWalletBalances(_wallets, _transactions);
 
+  /// Total saldo seluruh dompet aktif (isArchived == false)
+  int get totalBalance =>
+      FinanceCalculator.calculateTotalBalance(_wallets, _transactions);
+
   /// Mengambil saldo satu dompet tertentu
   int getWalletBalance(String walletId) {
     final wallet = _wallets.firstWhere(

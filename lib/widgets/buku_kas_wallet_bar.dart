@@ -25,13 +25,20 @@ class BukuKasWalletBar extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text(
-            'AKUN & DOMPET',
-            style: AppTypography.heroLabel,
+          const Flexible(
+            child: Text(
+              'AKUN & DOMPET',
+              style: AppTypography.heroLabel,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
-          Text(
-            '${wallets.length} Akun Aktif',
-            style: AppTypography.labelSmLink,
+          const SizedBox(width: AppDimens.spaceSm),
+          Flexible(
+            child: Text(
+              '${wallets.length} Akun Aktif',
+              style: AppTypography.labelSmLink,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ],
       ),

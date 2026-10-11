@@ -8,7 +8,7 @@ import 'package:catatan_keuangan/models/transaction.dart';
 import 'package:catatan_keuangan/models/wallet.dart';
 import 'package:catatan_keuangan/screens/transaction_form_screen.dart';
 import 'package:catatan_keuangan/theme/app_theme.dart';
-import 'package:catatan_keuangan/widgets/buku_kas_hero_summary.dart';
+import 'package:catatan_keuangan/widgets/buku_kas_month_section.dart';
 
 void main() {
   final testWallets = [
@@ -382,6 +382,9 @@ void main() {
     });
 
     testWidgets('Kartu ringkasan memiliki 2 kartu kecil berdampingan (Expanded flex: 1) dan FittedBox(scaleDown)', (tester) async {
+      // Alasan pembaruan Milestone NAV-2: Kartu hero lama digantikan oleh BukuKasMonthSection.
+      // Struktur 2 kartu berdampingan selebar sama (Expanded flex: 1) kini memuat Pemasukan & Pengeluaran,
+      // dan FittedBox(scaleDown) digunakan untuk memastikan nominal tidak overflow.
       final state = FinanceState(
         initialWallets: testWallets,
         initialCategories: testCategories,
@@ -391,12 +394,18 @@ void main() {
       await tester.pumpWidget(MyApp(initialState: state));
       await tester.pumpAndSettle();
 
-      final heroFinder = find.byType(BukuKasHeroSummary);
-      expect(heroFinder, findsOneWidget);
+      final monthSectionFinder = find.byType(BukuKasMonthSection);
+      expect(monthSectionFinder, findsOneWidget);
 
-      // Verifikasi 2 kartu kecil berdampingan Expanded flex: 1 (Pemasukan & Selisih)
+      // Verifikasi 2 kartu berdampingan Expanded flex: 1 (Pemasukan & Pengeluaran)
+      final incomeCard = find.byKey(const Key('bulan_pemasukan'));
+      final expenseCard = find.byKey(const Key('bulan_pengeluaran'));
+      expect(incomeCard, findsOneWidget);
+      expect(expenseCard, findsOneWidget);
+
+      final rowCards = find.ancestor(of: incomeCard, matching: find.byType(Row)).first;
       final expandedColumns = find.descendant(
-        of: heroFinder,
+        of: rowCards,
         matching: find.byType(Expanded),
       );
       expect(expandedColumns, findsNWidgets(2));
@@ -405,12 +414,12 @@ void main() {
         expect(exp.flex, 1);
       }
 
-      // Verifikasi 3 FittedBox dengan fit scaleDown (Pengeluaran, Pemasukan, Selisih)
+      // Verifikasi FittedBox dengan fit scaleDown pada bagian bulan
       final fittedBoxes = find.descendant(
-        of: heroFinder,
+        of: monthSectionFinder,
         matching: find.byType(FittedBox),
       );
-      expect(fittedBoxes, findsNWidgets(3));
+      expect(fittedBoxes, findsAtLeastNWidgets(3));
       for (final element in fittedBoxes.evaluate()) {
         final fb = element.widget as FittedBox;
         expect(fb.fit, BoxFit.scaleDown);

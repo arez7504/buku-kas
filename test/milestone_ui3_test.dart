@@ -9,7 +9,8 @@ import 'package:catatan_keuangan/theme/app_theme.dart';
 import 'package:catatan_keuangan/theme/category_icon_mapping.dart';
 import 'package:catatan_keuangan/widgets/buku_kas_day_group.dart';
 import 'package:catatan_keuangan/widgets/buku_kas_header.dart';
-import 'package:catatan_keuangan/widgets/buku_kas_hero_summary.dart';
+import 'package:catatan_keuangan/widgets/buku_kas_month_section.dart';
+import 'package:catatan_keuangan/widgets/buku_kas_saldo_total_card.dart';
 import 'package:catatan_keuangan/widgets/buku_kas_wallet_bar.dart';
 
 void main() {
@@ -92,7 +93,9 @@ void main() {
 
       expect(tester.takeException(), isNull);
       expect(find.byType(BukuKasHeader), findsOneWidget);
-      expect(find.byType(BukuKasHeroSummary), findsOneWidget);
+      // Alasan pembaruan Milestone NAV-2: Hero summary lama digantikan oleh kartu Saldo Total dan Bagian Bulan
+      expect(find.byType(BukuKasSaldoTotalCard), findsOneWidget);
+      expect(find.byType(BukuKasMonthSection), findsOneWidget);
       expect(find.byType(BukuKasWalletBar), findsOneWidget);
       // Alasan pembaruan Milestone NAV-1: BukuKasActionButton di HistoryScreen digantikan
       // oleh tombol aksi tengah nav_catat pada bilah navigasi bawah.
@@ -112,7 +115,9 @@ void main() {
 
       expect(tester.takeException(), isNull);
       expect(find.byType(BukuKasHeader), findsOneWidget);
-      expect(find.byType(BukuKasHeroSummary), findsOneWidget);
+      // Alasan pembaruan Milestone NAV-2: Hero summary lama digantikan oleh kartu Saldo Total dan Bagian Bulan
+      expect(find.byType(BukuKasSaldoTotalCard), findsOneWidget);
+      expect(find.byType(BukuKasMonthSection), findsOneWidget);
       expect(find.byType(BukuKasWalletBar), findsOneWidget);
       // Alasan pembaruan Milestone NAV-1: BukuKasActionButton di HistoryScreen digantikan
       // oleh tombol aksi tengah nav_catat pada bilah navigasi bawah.
@@ -138,13 +143,21 @@ void main() {
     });
   });
 
-  group('Milestone UI-3: Kartu Utama (Hero Summary)', () {
-    testWidgets('Label PENGELUARAN BULAN INI, dua kartu kecil Pemasukan & Selisih, dan tautan rincian', (tester) async {
+  group('Milestone UI-3: Bagian Bulan & Ringkasan', () {
+    testWidgets('Kartu Saldo Total, dua kartu Pemasukan & Pengeluaran, baris Selisih, dan tautan rincian', (tester) async {
+      // Alasan pembaruan Milestone NAV-2: Kartu hero lama "Pengeluaran bulan ini" digantikan
+      // oleh kartu hero "Saldo Total" dan bagian bulan terpisah dengan kartu Pemasukan, Pengeluaran,
+      // baris Selisih, serta tautan lihat rincian.
       await tester.pumpWidget(createTestApp());
       await tester.pumpAndSettle();
 
-      expect(find.text('PENGELUARAN BULAN INI'), findsOneWidget);
+      expect(find.byKey(const Key('saldo_total_card')), findsOneWidget);
+      expect(find.text('SALDO TOTAL'), findsOneWidget);
+      expect(find.byKey(const Key('bulan_pemasukan')), findsOneWidget);
+      expect(find.byKey(const Key('bulan_pengeluaran')), findsOneWidget);
+      expect(find.byKey(const Key('bulan_selisih')), findsOneWidget);
       expect(find.text('Pemasukan'), findsOneWidget);
+      expect(find.text('Pengeluaran'), findsOneWidget);
       expect(find.text('Selisih'), findsOneWidget);
       expect(find.byKey(const Key('lihat_rincian_link')), findsOneWidget);
 
@@ -168,8 +181,9 @@ void main() {
       await tester.pumpWidget(createTestApp(transactions: deficitTransactions));
       await tester.pumpAndSettle();
 
+      // Alasan pembaruan Milestone NAV-2: Selisih berada pada Key('bulan_selisih')
       final minusFinder = find.descendant(
-        of: find.byType(BukuKasHeroSummary),
+        of: find.byKey(const Key('bulan_selisih')),
         matching: find.text('- Rp 500.000'),
       );
       expect(minusFinder, findsOneWidget);

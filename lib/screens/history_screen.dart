@@ -4,7 +4,8 @@ import '../models/transaction.dart';
 import '../theme/app_theme.dart';
 import '../widgets/buku_kas_day_group.dart';
 import '../widgets/buku_kas_header.dart';
-import '../widgets/buku_kas_hero_summary.dart';
+import '../widgets/buku_kas_month_section.dart';
+import '../widgets/buku_kas_saldo_total_card.dart';
 import '../widgets/buku_kas_wallet_bar.dart';
 import 'expense_breakdown_screen.dart';
 import 'transaction_form_screen.dart';
@@ -153,24 +154,26 @@ class _HistoryScreenState extends State<HistoryScreen> {
       backgroundColor: AppColors.surface,
       body: SafeArea(
         child: CustomScrollView(
-          key: const PageStorageKey('history_scroll_view'),
+          key: const Key('history_scroll_view'),
           slivers: [
             SliverToBoxAdapter(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  BukuKasHeader(
+                  const BukuKasHeader(),
+                  BukuKasSaldoTotalCard(
+                    totalBalance: state.totalBalance,
+                  ),
+                  BukuKasMonthSection(
                     selectedMonth: _selectedMonth,
                     onPreviousMonth: _previousMonth,
                     onNextMonth: _nextMonth,
+                    summary: summary,
+                    onViewDetails: _openExpenseBreakdown,
                   ),
                   BukuKasWalletBar(
                     wallets: state.activeWallets,
                     walletBalances: walletBalances,
-                  ),
-                  BukuKasHeroSummary(
-                    summary: summary,
-                    onViewDetails: _openExpenseBreakdown,
                   ),
                   _buildSectionHeader(filteredTransactions.length),
                 ],

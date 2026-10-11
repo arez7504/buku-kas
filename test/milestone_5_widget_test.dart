@@ -139,7 +139,11 @@ void main() {
       await tester.pumpWidget(MyApp(initialState: state));
       await tester.pumpAndSettle();
 
-      // Verifikasi awal: di riwayat Buku Kas ada transaksi "Nasi padang siang" dari Tunai
+      // Alasan pembaruan Milestone NAV-2: Penambahan kartu Saldo Total dan Bagian Bulan
+      // membuat daftar transaksi berada di bawah viewport standar 800x600, sehingga digulir
+      // agar elemen terlihat.
+      await tester.drag(find.byKey(const Key('history_scroll_view')), const Offset(0, -200));
+      await tester.pumpAndSettle();
       expect(find.text('Nasi padang siang'), findsOneWidget);
       expect(find.text('Tunai'), findsWidgets);
 
@@ -174,6 +178,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // (c) Riwayat lama yang memakai Tunai tetap tampil normal
+      await tester.drag(find.byKey(const Key('history_scroll_view')), const Offset(0, -200));
+      await tester.pumpAndSettle();
       expect(find.text('Nasi padang siang'), findsOneWidget);
 
       // Buka form Catat Transaksi via tombol bilah navigasi nav_catat

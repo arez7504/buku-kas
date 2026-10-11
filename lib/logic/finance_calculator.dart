@@ -95,6 +95,25 @@ class FinanceCalculator {
     return result;
   }
 
+  /// Menghitung total saldo seluruh dompet aktif (isArchived == false).
+  /// Saldo masing-masing dompet dihitung dengan calculateWalletBalance.
+  /// Dompet terarsip tidak dihitung.
+  /// Transfer antar dua dompet aktif tidak mengubah total.
+  /// Transfer ke/dari dompet terarsip mengubah total secara proporsional.
+  /// Saldo negatif dijumlahkan apa adanya. Mengembalikan integer.
+  static int calculateTotalBalance(
+    List<Wallet> wallets,
+    List<Transaction> transactions,
+  ) {
+    int total = 0;
+    for (final wallet in wallets) {
+      if (!wallet.isArchived) {
+        total += calculateWalletBalance(wallet, transactions);
+      }
+    }
+    return total;
+  }
+
   /// Menghitung ringkasan bulanan (total pemasukan, pengeluaran, selisih).
   /// Sesuai SPEC.md: Transaksi transfer TIDAK DIHITUNG ke dalam pemasukan maupun pengeluaran.
   static MonthlySummary calculateMonthlySummary(

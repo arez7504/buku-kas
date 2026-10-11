@@ -209,6 +209,14 @@ class AppColors {
   static const Color bottomNavCatatText = Color(0xFFF1F0F7);
   static const Color bottomNavCatatIcon = Colors.white;
 
+  // Token Beranda Saldo Total & Bagian Bulan NAV-2
+  static const Color saldoTotalDot = Color(0xFFA855F7);
+  static const Color saldoTotalSubtitle = Color(0xFFA5A3B5);
+  static const Color monthCardBg = Color(0xFF161626);
+  static const Color monthCardBorder = Color(0xFF232336);
+  static const Color monthSelisihBg = Color(0xFF131320);
+  static const Color monthSelisihBorder = Color(0xFF202032);
+
   // Kompatibilitas
   static const Color transparent = Colors.transparent;
 }
@@ -216,6 +224,16 @@ class AppColors {
 /// Definisi gradasi sesuai desain HTML
 class AppGradients {
   static const LinearGradient heroCard = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      Color(0xFF1D1933),
+      Color(0xFF131322),
+      Color(0xFF0E0F1D),
+    ],
+  );
+
+  static const LinearGradient saldoTotalCard = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [
@@ -1236,6 +1254,74 @@ class AppTypography {
     fontSize: 14,
     fontWeight: FontWeight.w400,
     color: AppColors.onSurfaceVariant,
+  );
+
+  // Token Beranda Saldo Total & Bagian Bulan NAV-2
+  static const TextStyle saldoTotalLabel = TextStyle(
+    fontFamily: AppFonts.plusJakartaSans,
+    fontSize: 12,
+    fontWeight: FontWeight.w700,
+    letterSpacing: 0.8,
+    color: AppColors.onSurfaceVariant,
+  );
+
+  static const TextStyle saldoTotalAmount = TextStyle(
+    fontFamily: AppFonts.plusJakartaSans,
+    fontSize: 32,
+    fontWeight: FontWeight.w800,
+    color: AppColors.onSurface,
+    fontFeatures: [FontFeature.tabularFigures()],
+  );
+
+  static const TextStyle saldoTotalAmountNegative = TextStyle(
+    fontFamily: AppFonts.plusJakartaSans,
+    fontSize: 32,
+    fontWeight: FontWeight.w800,
+    color: AppColors.expenseRed,
+    fontFeatures: [FontFeature.tabularFigures()],
+  );
+
+  static const TextStyle saldoTotalSubtitle = TextStyle(
+    fontFamily: AppFonts.plusJakartaSans,
+    fontSize: 12,
+    fontWeight: FontWeight.w400,
+    color: AppColors.saldoTotalSubtitle,
+  );
+
+  static const TextStyle monthSectionHeader = TextStyle(
+    fontFamily: AppFonts.plusJakartaSans,
+    fontSize: 12,
+    fontWeight: FontWeight.w700,
+    letterSpacing: 0.8,
+    color: AppColors.onSurfaceVariant,
+  );
+
+  static const TextStyle monthCardLabel = TextStyle(
+    fontFamily: AppFonts.plusJakartaSans,
+    fontSize: 12,
+    fontWeight: FontWeight.w600,
+    color: Color(0x99FFFFFF),
+  );
+
+  static const TextStyle monthCardAmount = TextStyle(
+    fontFamily: AppFonts.plusJakartaSans,
+    fontSize: 16,
+    fontWeight: FontWeight.w700,
+    fontFeatures: [FontFeature.tabularFigures()],
+  );
+
+  static const TextStyle monthSelisihLabel = TextStyle(
+    fontFamily: AppFonts.plusJakartaSans,
+    fontSize: 13,
+    fontWeight: FontWeight.w600,
+    color: AppColors.onSurfaceVariant,
+  );
+
+  static const TextStyle monthSelisihAmount = TextStyle(
+    fontFamily: AppFonts.plusJakartaSans,
+    fontSize: 15,
+    fontWeight: FontWeight.w700,
+    fontFeatures: [FontFeature.tabularFigures()],
   );
 }
 
