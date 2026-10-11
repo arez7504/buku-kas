@@ -276,6 +276,25 @@ Dokumen ini berisi spesifikasi kebutuhan minimal (Minimum Viable Product / MVP) 
     - Layar penuh `WalletFormScreen` menggantikan `WalletFormDialog` untuk tombol (+) dan menu "Ubah" di Kelola Dompet. Menyediakan pratinjau live squircle 48x48 dp bertint gradasi + nama + saldo, input nama dompet dengan penghitung 0/30 dan batas 30 karakter, input saldo awal (angka), baris 3 pilihan ikon (touch target >= 48x48 dp), grid 12 bulatan warna bergradasi dengan centang putih, serta tombol Simpan di `bottomNavigationBar`. Menjaga kompatibilitas penuh key widget untuk testing (`wallet_name_input`, `wallet_name_edit_input`, `wallet_balance_input`, `wallet_balance_edit_input`, `wallet_save_button`, `wallet_update_button`, `wallet_icon_$key`, `wallet_color_$key`).
     - Cadangan data dinaikkan ke `formatVersion: 3` (menyertakan `iconKey` dan `colorKey` dompet). Fitur impor mendukung `formatVersion: 1`, `2` (kunci dompet diisi null), dan `3`. Kunci ikon atau warna dompet yang tidak dikenal otomatis disanitasi menjadi null (fallback aman tanpa menolak berkas).
 
+18. **Milestone UI-9 (Pemilih Ikon Kategori Geser per Halaman):**
+    - Menggantikan grid 41 ikon memanjang (9 baris) di `CategoryFormScreen` dengan pemilih berhalaman horizontal (`PageView.builder`) bawaan Flutter tanpa package eksternal baru.
+    - Satu halaman menampilkan grid 3 baris x 4 kolom = 12 ikon (rata kiri, tile persegi `constraints.maxWidth - spacing * 3 / 4` dan tinggi konsisten tanpa melompat pada halaman terakhir yang berisi 5 ikon).
+    - Jumlah halaman dihitung otomatis secara dinamis: `ceil(CategoryStyleRegistry.icons.length / 12)` = 4 halaman.
+    - Penanda titik (`CategoryPageIndicatorDots`) di bawah area ikon menampilkan 4 titik yang berubah reaktif mengikuti geseran posisi (`page.round()`). Titik aktif berbentuk kapsul (lebar 18 dp) dan titik tidak aktif berbentuk lingkaran (lebar 6 dp) dengan kontras >= 3:1 terhadap latar `#141422`. Tanpa teks angka visual "1/4"; dilengkapi label TalkBack Semantics `Halaman X dari Y`. Deretan titik disembunyikan otomatis jika jumlah halaman <= 1.
+    - Seleksi ikon bersifat global tunggal: pilihan tetap terpilih saat berpindah halaman dan kembali. Layar Ubah otomatis membuka langsung halaman tempat ikon kategori berada (mis. Halaman 3 atau 4). Mode Tambah otomatis menggeser pemilih ke halaman ikon hasil pemetaan nama (selama pengguna belum memilih manual).
+    - Area sentuh minimal tile memenuhi standar aksesibilitas WCAG (>= 48x48 dp) dengan token terpusat `AppDimens.minTouchTarget`. Bebas RenderFlex overflow pada resolusi 360x640 dp dan 411x891 dp dengan skala font 1.0 dan 2.0.
+
+19. **Milestone NAV-1 (Kerangka Navigasi Bilah Bawah):**
+    - Root aplikasi menggunakan satu kerangka `MainNavigationScreen` dengan bilah navigasi bawah (`MainBottomNavBar`) berisi 4 tab: Beranda (`nav_beranda`), Riwayat (`nav_riwayat`), Statistik (`nav_statistik`), Pengaturan (`nav_pengaturan`), ditambah tombol Catat (`nav_catat`) yang menonjol di tengah dengan gradasi token `AppGradients.catatButton`.
+    - Tab Beranda menggunakan `HistoryScreen` tanpa tombol aksi mengambang "Catat Transaksi" dan tanpa ikon gerigi Pengaturan di header (fungsinya diambil alih bilah navigasi bawah). Padding bawah daftar transaksi tetap dipertahankan (`AppDimens.bottomListPadding`) agar baris transaksi terakhir tidak tertutup bilah.
+    - Tab Riwayat dan Statistik menggunakan `PlaceholderTabScreen` bertema gelap dengan ikon, judul, dan teks "Segera hadir".
+    - Tab Pengaturan menggunakan `SettingsScreen` dengan parameter `showBackButton: false` sehingga panah kembali dihilangkan saat tampil sebagai tab. Sub-layar (Kelola Dompet, Kelola Kategori, dsb.) dibuka via push di atas kerangka layar penuh, otomatis menyembunyikan bilah navigasi bawah.
+    - Tombol Catat di tengah membuka `TransactionFormScreen` layar penuh tanpa bilah navigasi; setelah selesai atau ditutup, kembali ke tab asal tanpa mengubah indeks tab aktif.
+    - State setiap tab dipertahankan saat berpindah tab dan kembali (posisi gulir dan bulan terpilih di Beranda tidak hilang) menggunakan `IndexedStack` dan `PageStorageKey`.
+    - Tombol back sistem Android ditangani via `PopScope`: dari tab Riwayat/Statistik/Pengaturan kembali ke Beranda (`currentIndex = 0`); dari Beranda mengizinkan penutupan aplikasi. Sub-layar yang dibuka lewat push ditutup terlebih dahulu sebelum back berpindah tab.
+    - Layar kunci `AppLockWrapper` tetap membungkus seluruh kerangka navigasi, memastikan tidak ada konten maupun bilah navigasi yang bocor saat terkunci.
+    - Desain bilah navigasi bawah: tinggi nyaman (64 dp), area sentuh minimal 48x48 dp, label teks selalu terlihat (>= 12 sp), tab aktif ditandai ikon, warna, dan bobot teks berbeda (memenuhi kontras WCAG AA >= 4.5:1), tombol Catat tidak menutupi label tab pada layar sempit 360 dp, menghormati Safe Area / gesture bar, tanpa BackdropFilter/blur, dan seluruh styling menggunakan token terpusat di `lib/theme/app_theme.dart`.
+
 ### B. Hal yang Belum Dikerjakan
 1. **Sinkronisasi Cloud & Enkripsi Cadangan:**
    - Sinkronisasi otomatis ke cloud dan enkripsi berkas cadangan (Tahap 2).
@@ -295,21 +314,30 @@ Dokumen ini berisi spesifikasi kebutuhan minimal (Minimum Viable Product / MVP) 
 - `build_runner: ^2.15.1` (runner generator Dart - dev dependency)
 
 ### D. Hasil `flutter test` Terakhir
-- **Total Test:** 167
-- **Lulus:** 167 (100%)
+- **Total Test:** 185
+- **Lulus:** 185 (100%)
 - **Gagal:** 0
 - **Cakupan Pengujian:**
-  - `milestone_ui8_test.dart` (11 test):
-    - Uji registry memuat 3 ikon Material Icons dan memakai ulang 12 warna dari UI-7.
-    - Uji fungsi resolusi gaya dompet: pilihan pengguna mengalahkan pemetaan nama bawaan; null/tidak dikenal fallback ke pemetaan nama.
-    - Uji ekspor ke JSON memuat formatVersion 3 serta iconKey dan colorKey dompet.
-    - Uji impor formatVersion 1 dan 2 tetap berhasil dengan iconKey dan colorKey bernilai null.
-    - Uji sanitasi kunci dompet tidak dikenal (fallback ke null tanpa error).
-    - Uji penolakan formatVersion di luar 1, 2, dan 3.
-    - Uji widget Tambah Dompet: tampilan awal, counter 0/30, pilihan 3 ikon, 12 warna, dan pratinjau live.
-    - Uji validasi nama dompet: kosong, > 30 karakter, dan kembar ditolak dengan error yang benar.
-    - Uji widget Ubah Dompet: form terisi data lama dan key widget kompatibel backward (`wallet_name_edit_input`, `wallet_balance_edit_input`, `wallet_update_button`).
-    - Uji responsivitas pada resolusi 360x640 dan 411x891 dp tanpa overflow.
+  - `milestone_nav1_test.dart` (8 test):
+    - (a) Bilah navigasi tampil dengan empat tab dan tombol Catat; mengetuk tab berpindah layar dengan benar.
+    - (b) Tombol Catat membuka form tanpa bilah; setelah menutup form, bilah kembali dan tab asal tetap aktif.
+    - (c) Tombol back sistem Android dari tab Riwayat, Statistik, dan Pengaturan kembali ke Beranda; dari Beranda mengizinkan pop aplikasi.
+    - (d) Bulan terpilih dan posisi gulir di Beranda bertahan setelah pindah ke tab lain dan kembali.
+    - (e) Pengaturan sebagai tab tidak menampilkan panah kembali; membuka sub-layar Kelola Dompet menyembunyikan bilah navigasi bawah.
+    - (f) Responsivitas layout bebas overflow pada layar 360x640 dp dan 411x891 dp.
+    - (g) Layar kunci membungkus seluruh kerangka navigasi (bilah bawah tidak terlihat saat terkunci).
+    - (h) Aksesibilitas bilah: touch target >= 48x48 dp, ukuran label >= 12 sp, kontras warna label aktif terhadap latar memenuhi rasio WCAG AA (>= 4.5:1).
+  - `milestone_ui9_test.dart` (10 test):
+    - Uji total 41 ikon dan kalkulasi dinamis jumlah halaman = 4 (12 ikon/halaman, sisa 5 ikon di halaman 4).
+    - Uji token dimensi indikator titik dan rasio kontras >= 3:1 terhadap latar kartu `#141422`.
+    - Uji tampilan widget: 4 titik indikator hadir (kapsul aktif 18x6 dp vs lingkaran 6x6 dp), tanpa teks visual "1/4", serta label TalkBack Semantics `Halaman 1 dari 4`.
+    - Uji geser halaman horizontal: titik aktif berpindah dinamis dan tinggi area PageView di Halaman 4 identik dengan Halaman 1 (tidak melompat).
+    - Uji seleksi ikon bersifat global antar-halaman (pilih di halaman 2, geser ke halaman 1 dan kembali, ikon tetap terpilih; disimpan ke database dengan tepat).
+    - Uji layar Ubah membuka langsung di halaman tempat ikon lama berada (Halaman 3 untuk 'rumah' dan Halaman 4 untuk 'gadget').
+    - Uji mode Tambah: mengetik nama kategori yang memiliki pemetaan bawaan menggeser pemilih ke halaman terkait; setelah pengguna memilih manual, pengetikan nama tidak lagi memindahkan halaman.
+    - Uji responsivitas bebas RenderFlex overflow pada resolusi 360x640 dp dan 411x891 dp dengan skala huruf 1.0 dan 2.0, serta touch target tile >= 48x48 dp.
+    - Uji indikator titik otomatis disembunyikan (`SizedBox.shrink()`) jika hanya ada 1 halaman.
+  - `milestone_ui8_test.dart` (11 test)
   - `milestone_ui7_test.dart` (9 test)
   - `milestone_ui6_test.dart` (11 test)
   - `milestone_ui5_test.dart` (10 test)
@@ -362,5 +390,15 @@ Dokumen ini berisi spesifikasi kebutuhan minimal (Minimum Viable Product / MVP) 
     - Palet 12 warna diimpor langsung dari UI-7 (`CategoryStyleRegistry.colors`) tanpa redundansi deklarasi warna.
     - Form dompet `WalletFormScreen` berjalan layar penuh dengan pratinjau live, penghitung 0/30, touch target >= 48x48 dp, validasi nama kosong, batas 30 karakter, dan pencegahan nama kembar (case-insensitive, trimmed) dengan izin nama yang sama pada mode ubah.
     - Cadangan formatVersion 3 mendukung ekspor dan impor dompet ber-ikon dan ber-warna, dengan backward compatibility penuh untuk berkas formatVersion 1 dan 2.
+20. **Pemilih Ikon Kategori Paged UI-9:**
+    - Pemilih ikon kategori horizontal paged dengan 12 ikon per halaman (3 baris x 4 kolom), kalkulasi otomatis `ceil(41 / 12) = 4` halaman, slot kosong halaman terakhir tetap menjaga tinggi area PageView identik sehingga bebas lonjakan layout saat digeser.
+    - Penanda titik reaktif dengan kapsul aktif (18x6 dp) dan lingkaran tidak aktif (6x6 dp) memenuhi kontras >= 3:1 terhadap latar, TalkBack Semantics `Halaman X dari Y`, disembunyikan otomatis bila <= 1 halaman.
+    - Seleksi ikon bersifat global tunggal (tidak ter-reset saat digeser), pembukaan form Ubah langsung memposisikan pemilih ke halaman ikon terkait, dan form Tambah mendukung auto-scroll saat mengetik nama dengan pemetaan bawaan selama belum dipilih manual.
+    - Bebas overflow pada layar 360x640 dp dan 411x891 dp serta skala font 1.0 hingga 2.0, touch target >= 48x48 dp via token `AppDimens.minTouchTarget`.
 
-
+21. **Kerangka Navigasi Bilah Bawah (NAV-1):**
+    - Root aplikasi dibungkus oleh `MainNavigationScreen` yang menyajikan kerangka tunggal dengan `MainBottomNavBar` (Beranda, Riwayat, Catat, Statistik, Pengaturan). Tombol tengah Catat menonjol dengan gradasi neon `AppGradients.catatButton` dan border melingkar, dengan ukuran compact (44 dp) pada bilah 64 dp sehingga tidak memotong atau menutupi label teks tab sekitarnya pada layar sempit 360 dp.
+    - Tab state persistence dicapai dengan `IndexedStack` dan `PageStorageKey` pada scroll view Beranda, menjaga posisi scroll dan bulan terpilih saat beralih antar-tab.
+    - Navigasi back Android memakai `PopScope`: ketika berada di tab 1, 2, atau 3 (Riwayat, Statistik, Pengaturan), tombol back sistem beralih kembali ke tab Beranda (indeks 0). Dari Beranda, penekanan back keluar dari aplikasi. Sub-layar yang di-push (seperti Kelola Dompet/Kategori, form transaksi) berada di atas Navigator root sehingga back menutup sub-layar terlebih dahulu sebelum PopScope tab dipicu.
+    - Form Catat Transaksi dibuka layar penuh di atas kerangka via `Navigator.push`, menyembunyikan bilah navigasi bawah secara alami dan mengembalikannya saat form ditutup tanpa mereset tab asal.
+    - Seluruh kerangka navigasi tetap berada di dalam `AppLockWrapper`, sehingga saat status terkunci aktif, `LockScreen` menutupi seluruh layar termasuk bilah bawah tanpa kebocoran data visual.

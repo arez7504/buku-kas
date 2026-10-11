@@ -91,28 +91,6 @@ class BukuKasHeader extends StatelessWidget {
     );
   }
 
-  Widget _buildSettingsButton() {
-    return InkWell(
-      key: const Key('settings_button'),
-      borderRadius: BorderRadius.circular(AppDimens.radiusFull),
-      onTap: onSettings,
-      child: Container(
-        width: 32,
-        height: 32,
-        decoration: BoxDecoration(
-          color: AppColors.surfaceContainerLow,
-          border: Border.all(color: AppColors.borderSubtle),
-          shape: BoxShape.circle,
-        ),
-        child: const Icon(
-          Icons.settings_outlined,
-          size: AppDimens.iconSmall,
-          color: AppColors.onSurfaceVariant,
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -127,7 +105,6 @@ class BukuKasHeader extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _buildWalletTitle(),
-              _buildSettingsButton(),
             ],
           ),
           const SizedBox(height: AppDimens.spaceSm),

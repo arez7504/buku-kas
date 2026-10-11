@@ -37,21 +37,23 @@ void main() {
       );
     });
 
-    testWidgets('Header Buku Kas memiliki ikon gerigi yang membuka layar Pengaturan', (tester) async {
+    testWidgets('Tab Pengaturan pada bilah navigasi membuka layar Pengaturan (Milestone NAV-1)', (tester) async {
+      // Alasan pembaruan Milestone NAV-1: Ikon gerigi di header Buku Kas dihapus karena
+      // fungsinya diambil alih oleh tab Pengaturan (Key('nav_pengaturan')) pada bilah bawah.
       await tester.pumpWidget(MyApp(initialState: state));
       await tester.pumpAndSettle();
 
-      // Cari tombol gerigi di header
-      final settingsBtn = find.byKey(const Key('settings_button'));
-      expect(settingsBtn, findsOneWidget);
+      // Cari tab Pengaturan di bilah navigasi bawah
+      final settingsTab = find.byKey(const Key('nav_pengaturan'));
+      expect(settingsTab, findsOneWidget);
 
-      // Tap ikon gerigi
-      await tester.tap(settingsBtn);
+      // Tap tab Pengaturan
+      await tester.tap(settingsTab);
       await tester.pumpAndSettle();
 
       // Verifikasi layar Pengaturan terbuka dan memiliki dua menu
       expect(find.byType(SettingsScreen), findsOneWidget);
-      expect(find.text('Pengaturan'), findsOneWidget);
+      expect(find.descendant(of: find.byType(AppBar), matching: find.text('Pengaturan')), findsOneWidget);
       expect(find.text('Kelola Dompet'), findsOneWidget);
       expect(find.text('Kelola Kategori'), findsOneWidget);
     });
@@ -64,8 +66,8 @@ void main() {
       expect(find.text('BCA'), findsWidgets);
       expect(find.text('Rp 0'), findsOneWidget);
 
-      // Buka Pengaturan -> Kelola Dompet
-      await tester.tap(find.byKey(const Key('settings_button')));
+      // Buka Pengaturan -> Kelola Dompet via tab bilah navigasi
+      await tester.tap(find.byKey(const Key('nav_pengaturan')));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Kelola Dompet'));
       await tester.pumpAndSettle();
@@ -88,10 +90,10 @@ void main() {
       await tester.tap(find.byKey(const Key('wallet_update_button')));
       await tester.pumpAndSettle();
 
-      // Kembali ke Pengaturan lalu kembali ke Buku Kas
+      // Kembali ke Pengaturan lalu kembali ke Beranda via tab bilah navigasi
       await tester.tap(find.byIcon(Icons.arrow_back));
       await tester.pumpAndSettle();
-      await tester.tap(find.byIcon(Icons.arrow_back));
+      await tester.tap(find.byKey(const Key('nav_beranda')));
       await tester.pumpAndSettle();
 
       // Verifikasi: Saldo BCA di baris dompet Buku Kas sekarang menjadi Rp 1.000.000
@@ -102,8 +104,8 @@ void main() {
       await tester.pumpWidget(MyApp(initialState: state));
       await tester.pumpAndSettle();
 
-      // Masuk ke Kelola Dompet
-      await tester.tap(find.byKey(const Key('settings_button')));
+      // Masuk ke Kelola Dompet via tab Pengaturan
+      await tester.tap(find.byKey(const Key('nav_pengaturan')));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Kelola Dompet'));
       await tester.pumpAndSettle();
@@ -141,8 +143,8 @@ void main() {
       expect(find.text('Nasi padang siang'), findsOneWidget);
       expect(find.text('Tunai'), findsWidgets);
 
-      // Buka Pengaturan -> Kelola Dompet
-      await tester.tap(find.byKey(const Key('settings_button')));
+      // Buka Pengaturan -> Kelola Dompet via tab Pengaturan
+      await tester.tap(find.byKey(const Key('nav_pengaturan')));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Kelola Dompet'));
       await tester.pumpAndSettle();
@@ -165,17 +167,17 @@ void main() {
       // Verifikasi dompet Tunai berstatus diarsipkan
       expect(find.text('Diarsipkan'), findsOneWidget);
 
-      // Kembali ke Buku Kas
+      // Kembali ke Pengaturan lalu kembali ke Beranda via tab bilah navigasi
       await tester.tap(find.byIcon(Icons.arrow_back));
       await tester.pumpAndSettle();
-      await tester.tap(find.byIcon(Icons.arrow_back));
+      await tester.tap(find.byKey(const Key('nav_beranda')));
       await tester.pumpAndSettle();
 
       // (c) Riwayat lama yang memakai Tunai tetap tampil normal
       expect(find.text('Nasi padang siang'), findsOneWidget);
 
-      // Buka form Catat Transaksi via FAB
-      await tester.tap(find.byType(FloatingActionButton));
+      // Buka form Catat Transaksi via tombol bilah navigasi nav_catat
+      await tester.tap(find.byKey(const Key('nav_catat')));
       await tester.pumpAndSettle();
 
       // (d) Dompet Tunai yang diarsipkan HILANG dari pilihan dompet form Catat!
@@ -189,8 +191,8 @@ void main() {
       await tester.pumpWidget(MyApp(initialState: state));
       await tester.pumpAndSettle();
 
-      // Buka Pengaturan -> Kelola Kategori
-      await tester.tap(find.byKey(const Key('settings_button')));
+      // Buka Pengaturan -> Kelola Kategori via tab Pengaturan
+      await tester.tap(find.byKey(const Key('nav_pengaturan')));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Kelola Kategori'));
       await tester.pumpAndSettle();
@@ -229,13 +231,13 @@ void main() {
       await tester.tap(find.byKey(const Key('offer_archive_category_button')));
       await tester.pumpAndSettle();
 
-      // Kembali ke Buku Kas lalu buka Form Catat
+      // Kembali ke Pengaturan lalu ke tab Beranda, lalu buka form Catat via nav_catat
       await tester.tap(find.byIcon(Icons.arrow_back));
       await tester.pumpAndSettle();
-      await tester.tap(find.byIcon(Icons.arrow_back));
+      await tester.tap(find.byKey(const Key('nav_beranda')));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byType(FloatingActionButton));
+      await tester.tap(find.byKey(const Key('nav_catat')));
       await tester.pumpAndSettle();
 
       // Kategori Makanan yang diarsipkan TIDAK muncul di form Catat

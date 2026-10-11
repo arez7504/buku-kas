@@ -26,12 +26,14 @@ class SettingsScreen extends StatelessWidget {
   final Future<void> Function(String fileName, String jsonString)? shareOverride;
   final Future<String?> Function()? filePickerOverride;
   final AppLockManager? lockManagerOverride;
+  final bool showBackButton;
 
   const SettingsScreen({
     super.key,
     this.shareOverride,
     this.filePickerOverride,
     this.lockManagerOverride,
+    this.showBackButton = true,
   });
 
   @override
@@ -45,10 +47,13 @@ class SettingsScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Pengaturan', style: AppTypography.headlineSm),
         centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, size: AppDimens.iconMedium),
-          onPressed: () => Navigator.pop(context),
-        ),
+        automaticallyImplyLeading: showBackButton,
+        leading: showBackButton
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back, size: AppDimens.iconMedium),
+                onPressed: () => Navigator.pop(context),
+              )
+            : null,
       ),
       body: SafeArea(
         child: ListView(

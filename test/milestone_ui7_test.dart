@@ -343,6 +343,15 @@ void main() {
       await tester.enterText(find.byKey(const Key('category_name_input')), 'Gym & Fitnes');
       await tester.pumpAndSettle();
 
+      // Gulir form agar pemilih ikon terlihat di viewport
+      await tester.ensureVisible(find.byKey(const Key('category_icon_page_view')));
+      await tester.pumpAndSettle();
+
+      // Di Milestone UI-9, pemilih ikon dibuat geser (12 ikon/halaman).
+      // Ikon 'olahraga' (indeks 19) berada di halaman 2 (indeks 1), sehingga geser PageView ke kiri.
+      await tester.drag(find.byKey(const Key('category_icon_page_view')), const Offset(-400, 0));
+      await tester.pumpAndSettle();
+
       // Pilih ikon (key 'category_icon_olahraga')
       await tester.ensureVisible(find.byKey(const Key('category_icon_olahraga')));
       await tester.tap(find.byKey(const Key('category_icon_olahraga')));

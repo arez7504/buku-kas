@@ -121,8 +121,8 @@ void main() {
       await tester.pumpWidget(buildTestApp(state: state, lockManager: lockManager));
       await tester.pumpAndSettle();
 
-      // Buka Pengaturan via tombol gerigi di header
-      await tester.tap(find.byKey(const Key('settings_button')));
+      // Buka Pengaturan via tab nav_pengaturan di bilah navigasi bawah (Milestone NAV-1)
+      await tester.tap(find.byKey(const Key('nav_pengaturan')));
       await tester.pumpAndSettle();
 
       expect(find.byType(SettingsScreen), findsOneWidget);
@@ -189,8 +189,8 @@ void main() {
       await tester.pumpWidget(buildTestApp(state: state, lockManager: lockManager));
       await tester.pumpAndSettle();
 
-      // Buka Pengaturan
-      await tester.tap(find.byKey(const Key('settings_button')));
+      // Buka Pengaturan via tab nav_pengaturan
+      await tester.tap(find.byKey(const Key('nav_pengaturan')));
       await tester.pumpAndSettle();
 
       final switchFinder = find.byKey(const Key('switch_kunci_aplikasi'));

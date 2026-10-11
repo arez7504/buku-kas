@@ -2,13 +2,11 @@ import 'package:flutter/material.dart';
 import '../logic/finance_state.dart';
 import '../models/transaction.dart';
 import '../theme/app_theme.dart';
-import '../widgets/buku_kas_action_button.dart';
 import '../widgets/buku_kas_day_group.dart';
 import '../widgets/buku_kas_header.dart';
 import '../widgets/buku_kas_hero_summary.dart';
 import '../widgets/buku_kas_wallet_bar.dart';
 import 'expense_breakdown_screen.dart';
-import 'settings_screen.dart';
 import 'transaction_form_screen.dart';
 
 /// Layar utama Buku Kas sesuai desain tema gelap fintech baru (UI-3)
@@ -153,12 +151,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.surface,
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      floatingActionButton: BukuKasActionButton(
-        onPressed: () => _openTransactionForm(),
-      ),
       body: SafeArea(
         child: CustomScrollView(
+          key: const PageStorageKey('history_scroll_view'),
           slivers: [
             SliverToBoxAdapter(
               child: Column(
@@ -168,12 +163,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     selectedMonth: _selectedMonth,
                     onPreviousMonth: _previousMonth,
                     onNextMonth: _nextMonth,
-                    onSettings: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const SettingsScreen()),
-                      );
-                    },
                   ),
                   BukuKasWalletBar(
                     wallets: state.activeWallets,

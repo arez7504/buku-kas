@@ -7,7 +7,6 @@ import 'package:catatan_keuangan/models/transaction.dart';
 import 'package:catatan_keuangan/models/wallet.dart';
 import 'package:catatan_keuangan/theme/app_theme.dart';
 import 'package:catatan_keuangan/theme/category_icon_mapping.dart';
-import 'package:catatan_keuangan/widgets/buku_kas_action_button.dart';
 import 'package:catatan_keuangan/widgets/buku_kas_day_group.dart';
 import 'package:catatan_keuangan/widgets/buku_kas_header.dart';
 import 'package:catatan_keuangan/widgets/buku_kas_hero_summary.dart';
@@ -95,7 +94,9 @@ void main() {
       expect(find.byType(BukuKasHeader), findsOneWidget);
       expect(find.byType(BukuKasHeroSummary), findsOneWidget);
       expect(find.byType(BukuKasWalletBar), findsOneWidget);
-      expect(find.byType(BukuKasActionButton), findsOneWidget);
+      // Alasan pembaruan Milestone NAV-1: BukuKasActionButton di HistoryScreen digantikan
+      // oleh tombol aksi tengah nav_catat pada bilah navigasi bawah.
+      expect(find.byKey(const Key('nav_catat')), findsOneWidget);
     });
 
     testWidgets('Layar 411x891 dp (layar modern) bebas overflow', (tester) async {
@@ -113,12 +114,16 @@ void main() {
       expect(find.byType(BukuKasHeader), findsOneWidget);
       expect(find.byType(BukuKasHeroSummary), findsOneWidget);
       expect(find.byType(BukuKasWalletBar), findsOneWidget);
-      expect(find.byType(BukuKasActionButton), findsOneWidget);
+      // Alasan pembaruan Milestone NAV-1: BukuKasActionButton di HistoryScreen digantikan
+      // oleh tombol aksi tengah nav_catat pada bilah navigasi bawah.
+      expect(find.byKey(const Key('nav_catat')), findsOneWidget);
     });
   });
 
   group('Milestone UI-3: Header & Navigasi Bulan', () {
-    testWidgets('Header hanya menampilkan satu judul "Buku Kas", ikon dompet, dan tombol pengaturan', (tester) async {
+    testWidgets('Header hanya menampilkan satu judul "Buku Kas" dan ikon dompet', (tester) async {
+      // Alasan pembaruan Milestone NAV-1: Ikon gerigi di header dihapus karena fungsinya
+      // diambil alih oleh tab Pengaturan (Key('nav_pengaturan')) pada bilah navigasi bawah.
       await tester.pumpWidget(createTestApp());
       await tester.pumpAndSettle();
 
@@ -126,10 +131,10 @@ void main() {
       expect(find.text('Buku Kas'), findsOneWidget);
       // Tanpa kata "Pribadi"
       expect(find.textContaining('Pribadi'), findsNothing);
-      // Ada ikon pengaturan
-      expect(find.byKey(const Key('settings_button')), findsOneWidget);
       // Ada ikon dompet di header
       expect(find.byIcon(Icons.account_balance_wallet_outlined), findsOneWidget);
+      // Tab pengaturan hadir pada bilah navigasi
+      expect(find.byKey(const Key('nav_pengaturan')), findsOneWidget);
     });
   });
 
@@ -242,14 +247,15 @@ void main() {
       expect(AppCategoryIcons.getStyle(null, type: TransactionType.transfer).icon, Icons.swap_horiz);
     });
 
-    testWidgets('Tombol gradasi Catat Transaksi menggantikan bilah navigasi', (tester) async {
+    testWidgets('Tombol gradasi Catat hadir pada bilah navigasi bawah (Milestone NAV-1)', (tester) async {
+      // Alasan pembaruan Milestone NAV-1: Tombol gradasi Catat Transaksi floatingActionButton
+      // dipindahkan menjadi tombol aksi tengah 'nav_catat' pada bilah navigasi bawah MainBottomNavBar.
       await tester.pumpWidget(createTestApp());
       await tester.pumpAndSettle();
 
-      expect(find.byType(BukuKasActionButton), findsOneWidget);
-      expect(find.text('Catat Transaksi'), findsOneWidget);
-      expect(find.byType(NavigationBar), findsNothing);
-      expect(find.byType(BottomNavigationBar), findsNothing);
+      expect(find.byKey(const Key('nav_catat')), findsOneWidget);
+      expect(find.text('Catat'), findsOneWidget);
+      expect(find.byKey(const Key('nav_beranda')), findsOneWidget);
     });
   });
 }

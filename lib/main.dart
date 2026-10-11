@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'data/finance_repository.dart';
 import 'logic/app_lock_manager.dart';
 import 'logic/finance_state.dart';
-import 'screens/history_screen.dart';
+import 'screens/main_navigation_screen.dart';
 import 'theme/app_theme.dart';
 import 'widgets/app_lock_scope.dart';
 
@@ -25,11 +25,13 @@ void main() async {
 class MyApp extends StatefulWidget {
   final FinanceState? initialState;
   final AppLockManager? lockManager;
+  final int initialNavIndex;
 
   const MyApp({
     super.key,
     this.initialState,
     this.lockManager,
+    this.initialNavIndex = 0,
   });
 
   @override
@@ -77,7 +79,7 @@ class _MyAppState extends State<MyApp> {
               child: child ?? const SizedBox.shrink(),
             );
           },
-          home: const HistoryScreen(),
+          home: MainNavigationScreen(initialIndex: widget.initialNavIndex),
         ),
       ),
     );

@@ -197,6 +197,18 @@ class AppColors {
   static const Color catSlateBorder = Color(0x4064748B);
   static const Color catSlateIcon = Color(0xFFCBD5E1);
 
+  // Token UI-9: Pemilih ikon kategori paged
+  static const Color categoryPickerDotActive = primary; // Color(0xFFD0BCFF)
+  static const Color categoryPickerDotInactive = Color(0x66FFFFFF); // 40% putih, kontras >= 3:1 terhadap #141422
+
+  // Token Bilah Navigasi Bawah Milestone NAV-1
+  static const Color bottomNavBg = Color(0xFF13131E);
+  static const Color bottomNavBorder = Color(0x1AFFFFFF);
+  static const Color bottomNavActive = Color(0xFF4CD7F6);
+  static const Color bottomNavInactive = Color(0xFF9A98AA);
+  static const Color bottomNavCatatText = Color(0xFFF1F0F7);
+  static const Color bottomNavCatatIcon = Colors.white;
+
   // Kompatibilitas
   static const Color transparent = Colors.transparent;
 }
@@ -492,6 +504,28 @@ class AppShadows {
       offset: Offset(0, 6),
     ),
   ];
+
+  // Bayangan Bilah Navigasi Bawah Milestone NAV-1
+  static const List<BoxShadow> bottomNavBar = [
+    BoxShadow(
+      color: Color(0x40000000),
+      blurRadius: 16,
+      offset: Offset(0, -4),
+    ),
+  ];
+
+  static const List<BoxShadow> bottomNavCatatButton = [
+    BoxShadow(
+      color: Color(0x669333EA),
+      blurRadius: 12,
+      offset: Offset(0, 4),
+    ),
+    BoxShadow(
+      color: Color(0x3306B6D4),
+      blurRadius: 8,
+      offset: Offset(0, 2),
+    ),
+  ];
 }
 
 /// Nama font lokal
@@ -551,6 +585,23 @@ class AppDimens {
   static const double categoryIconBoxSize = 44.0;
   static const double categoryIconInner = 22.0;
   static const double addButtonSize = 40.0;
+
+  // Dimensi Pemilih Ikon Paged UI-9
+  static const double categoryPickerDotHeight = 6.0;
+  static const double categoryPickerDotWidthInactive = 6.0;
+  static const double categoryPickerDotWidthActive = 18.0;
+  static const double categoryPickerDotSpacing = 6.0;
+  static const double categoryPickerGridSpacing = 8.0;
+  static const double minTouchTarget = 48.0;
+
+  // Dimensi Bilah Navigasi Bawah & Layar Placeholder Milestone NAV-1
+  static const double bottomNavHeight = 68.0;
+  static const double bottomNavIconSize = 24.0;
+  static const double bottomNavCatatButtonSize = 40.0;
+  static const double bottomNavCatatIconSize = 24.0;
+  static const double bottomNavItemSpacing = 4.0;
+  static const double placeholderIconBoxSize = 56.0;
+  static const double placeholderIconSize = 28.0;
 }
 
 /// Tipografi terpusat menggunakan Plus Jakarta Sans dengan tabular figures untuk nominal
@@ -1150,6 +1201,42 @@ class AppTypography {
     letterSpacing: 0.5,
     color: AppColors.onSurfaceVariant,
   );
+
+  // Tipografi Bilah Navigasi Bawah & Placeholder Milestone NAV-1
+  static const TextStyle bottomNavLabelActive = TextStyle(
+    fontFamily: AppFonts.plusJakartaSans,
+    fontSize: 12,
+    fontWeight: FontWeight.w700,
+    color: AppColors.bottomNavActive,
+  );
+
+  static const TextStyle bottomNavLabelInactive = TextStyle(
+    fontFamily: AppFonts.plusJakartaSans,
+    fontSize: 12,
+    fontWeight: FontWeight.w500,
+    color: AppColors.bottomNavInactive,
+  );
+
+  static const TextStyle bottomNavLabelCatat = TextStyle(
+    fontFamily: AppFonts.plusJakartaSans,
+    fontSize: 12,
+    fontWeight: FontWeight.w700,
+    color: AppColors.bottomNavCatatText,
+  );
+
+  static const TextStyle placeholderTitle = TextStyle(
+    fontFamily: AppFonts.plusJakartaSans,
+    fontSize: 18,
+    fontWeight: FontWeight.w700,
+    color: AppColors.onSurface,
+  );
+
+  static const TextStyle placeholderSubtitle = TextStyle(
+    fontFamily: AppFonts.plusJakartaSans,
+    fontSize: 14,
+    fontWeight: FontWeight.w400,
+    color: AppColors.onSurfaceVariant,
+  );
 }
 
 /// Konfigurasi ThemeData global gelap tunggal
@@ -1246,4 +1333,10 @@ class AppTheme {
 
   // Tema gelap menjadi satu-satunya tema di aplikasi
   static ThemeData get lightTheme => darkTheme;
+}
+
+/// Durasi animasi terpusat
+class AppDurations {
+  static const Duration fast = Duration(milliseconds: 150);
+  static const Duration pageTransition = Duration(milliseconds: 250);
 }

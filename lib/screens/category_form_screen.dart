@@ -33,13 +33,23 @@ class CategoryFormScreen extends StatefulWidget {
 
 class _CategoryFormScreenState extends State<CategoryFormScreen> {
   late TextEditingController _nameController;
+  late PageController _pageController;
   late CategoryType _selectedType;
   String? _selectedIconKey;
   String? _selectedColorKey;
   String? _errorMessage;
+  int _currentPage = 0;
   bool _userExplicitlySelectedIcon = false;
   bool _userExplicitlySelectedColor = false;
   bool _isSaving = false;
+
+  int _getPageIndexForIcon(String? iconKey) {
+    if (iconKey == null) return 0;
+    final keys = CategoryStyleRegistry.icons.keys.toList();
+    final index = keys.indexOf(iconKey);
+    if (index < 0) return 0;
+    return index ~/ 12;
+  }
 
   @override
   void initState() {
@@ -62,6 +72,11 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
       _selectedColorKey = defaultKeys?.colorKey ?? 'violet';
     }
 
+    final initialPage = _getPageIndexForIcon(_selectedIconKey);
+    _currentPage = initialPage;
+    _pageController = PageController(initialPage: initialPage);
+    _pageController.addListener(_onPageControllerScrolled);
+
     _nameController.addListener(_onNameChanged);
   }
 
@@ -69,7 +84,39 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
   void dispose() {
     _nameController.removeListener(_onNameChanged);
     _nameController.dispose();
+    _pageController.removeListener(_onPageControllerScrolled);
+    _pageController.dispose();
     super.dispose();
+  }
+
+  void _onPageControllerScrolled() {
+    if (!mounted || !_pageController.hasClients) return;
+    final page = _pageController.page;
+    if (page != null) {
+      final round = page.round();
+      if (round != _currentPage) {
+        setState(() {
+          _currentPage = round;
+        });
+      }
+    }
+  }
+
+  void _scrollToIconPage(String? iconKey) {
+    if (iconKey == null || !_pageController.hasClients) return;
+    final targetPage = _getPageIndexForIcon(iconKey);
+    if (targetPage != _currentPage) {
+      final disableAnimations = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+      if (disableAnimations) {
+        _pageController.jumpToPage(targetPage);
+      } else {
+        _pageController.animateToPage(
+          targetPage,
+          duration: AppDurations.pageTransition,
+          curve: Curves.easeOutCubic,
+        );
+      }
+    }
   }
 
   void _onNameChanged() {
@@ -84,6 +131,7 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
         if (defaultKeys != null) {
           if (!_userExplicitlySelectedIcon) {
             _selectedIconKey = defaultKeys.iconKey;
+            _scrollToIconPage(defaultKeys.iconKey);
           }
           if (!_userExplicitlySelectedColor) {
             _selectedColorKey = defaultKeys.colorKey;
@@ -246,8 +294,11 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
               ),
               const SizedBox(height: AppDimens.spaceLg),
 
-              // 4. Grid Pilih Ikon
-              _CategoryIconGrid(
+              // 4. Pemilih Ikon Geser (Paged)
+              CategoryPagedIconPicker(
+                pageController: _pageController,
+                pageCount: (CategoryStyleRegistry.icons.length / 12).ceil(),
+                currentPage: _currentPage,
                 selectedIconKey: _selectedIconKey,
                 onIconSelected: _onIconSelected,
               ),
@@ -553,12 +604,19 @@ class _CategoryNameField extends StatelessWidget {
   }
 }
 
-/// 4. Komponen Grid Pilih Ikon (5 kolom, scrollable dengan layar)
-class _CategoryIconGrid extends StatelessWidget {
+/// 4. Komponen Pemilih Ikon Geser (Paged 3 baris x 4 kolom = 12 ikon per halaman)
+class CategoryPagedIconPicker extends StatelessWidget {
+  final PageController pageController;
+  final int pageCount;
+  final int currentPage;
   final String? selectedIconKey;
   final ValueChanged<String> onIconSelected;
 
-  const _CategoryIconGrid({
+  const CategoryPagedIconPicker({
+    super.key,
+    required this.pageController,
+    required this.pageCount,
+    required this.currentPage,
     required this.selectedIconKey,
     required this.onIconSelected,
   });
@@ -581,22 +639,38 @@ class _CategoryIconGrid extends StatelessWidget {
           ),
           child: LayoutBuilder(
             builder: (context, constraints) {
-              final itemWidth = (constraints.maxWidth - (AppDimens.spaceSm * 4)) / 5;
-              return Wrap(
-                spacing: AppDimens.spaceSm,
-                runSpacing: AppDimens.spaceSm,
+              const spacing = AppDimens.categoryPickerGridSpacing;
+              // 4 kolom -> 3 jeda pemisah
+              final itemWidth = (constraints.maxWidth - (spacing * 3)) / 4;
+              // 3 baris -> 2 jeda pemisah
+              final pageHeight = (itemWidth * 3) + (spacing * 2);
+
+              return Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  for (final entry in iconEntries)
-                    SizedBox(
-                      width: itemWidth,
-                      height: itemWidth,
-                      child: _IconGridTile(
-                        iconKey: entry.key,
-                        iconData: entry.value,
-                        isSelected: entry.key == selectedIconKey,
-                        onTap: () => onIconSelected(entry.key),
-                      ),
+                  SizedBox(
+                    height: pageHeight,
+                    child: PageView.builder(
+                      key: const Key('category_icon_page_view'),
+                      controller: pageController,
+                      itemCount: pageCount,
+                      itemBuilder: (context, pageIndex) {
+                        final startIndex = pageIndex * 12;
+                        return CategoryIconPage(
+                          startIndex: startIndex,
+                          iconEntries: iconEntries,
+                          selectedIconKey: selectedIconKey,
+                          onIconSelected: onIconSelected,
+                          spacing: spacing,
+                        );
+                      },
                     ),
+                  ),
+                  const SizedBox(height: AppDimens.spaceSm),
+                  CategoryPageIndicatorDots(
+                    pageCount: pageCount,
+                    currentPage: currentPage,
+                  ),
                 ],
               );
             },
@@ -607,13 +681,69 @@ class _CategoryIconGrid extends StatelessWidget {
   }
 }
 
-class _IconGridTile extends StatelessWidget {
+class CategoryIconPage extends StatelessWidget {
+  final int startIndex;
+  final List<MapEntry<String, IconData>> iconEntries;
+  final String? selectedIconKey;
+  final ValueChanged<String> onIconSelected;
+  final double spacing;
+
+  const CategoryIconPage({
+    super.key,
+    required this.startIndex,
+    required this.iconEntries,
+    required this.selectedIconKey,
+    required this.onIconSelected,
+    required this.spacing,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        for (int row = 0; row < 3; row++) ...[
+          if (row > 0) SizedBox(height: spacing),
+          Expanded(
+            child: Row(
+              children: [
+                for (int col = 0; col < 4; col++) ...[
+                  if (col > 0) SizedBox(width: spacing),
+                  Expanded(
+                    child: _buildTileOrPlaceholder(row * 4 + col),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildTileOrPlaceholder(int slotOffset) {
+    final entryIndex = startIndex + slotOffset;
+    if (entryIndex < iconEntries.length) {
+      final entry = iconEntries[entryIndex];
+      return CategoryIconGridTile(
+        iconKey: entry.key,
+        iconData: entry.value,
+        isSelected: entry.key == selectedIconKey,
+        onTap: () => onIconSelected(entry.key),
+      );
+    }
+    // Slot kosong di halaman terakhir tetap mengisi ruang agar tinggi halaman identik
+    return const SizedBox.shrink();
+  }
+}
+
+class CategoryIconGridTile extends StatelessWidget {
   final String iconKey;
   final IconData iconData;
   final bool isSelected;
   final VoidCallback onTap;
 
-  const _IconGridTile({
+  const CategoryIconGridTile({
+    super.key,
     required this.iconKey,
     required this.iconData,
     required this.isSelected,
@@ -622,30 +752,110 @@ class _IconGridTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        key: Key('category_icon_$iconKey'),
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppDimens.radiusDefault),
-        child: Container(
-          constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: isSelected
-                ? AppColors.primary.withValues(alpha: 0.15)
-                : AppColors.surfaceContainer,
-            borderRadius: BorderRadius.circular(AppDimens.radiusDefault),
-            border: Border.all(
-              color: isSelected ? AppColors.primary : AppColors.borderFaint,
-              width: isSelected ? AppDimens.borderWidthMedium : AppDimens.borderWidthThin,
+    return Semantics(
+      label: 'Ikon $iconKey',
+      button: true,
+      selected: isSelected,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          key: Key('category_icon_$iconKey'),
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AppDimens.radiusDefault),
+          child: Container(
+            constraints: const BoxConstraints(
+              minWidth: AppDimens.minTouchTarget,
+              minHeight: AppDimens.minTouchTarget,
+            ),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? AppColors.primary.withValues(alpha: 0.15)
+                  : AppColors.surfaceContainer,
+              borderRadius: BorderRadius.circular(AppDimens.radiusDefault),
+              border: Border.all(
+                color: isSelected ? AppColors.primary : AppColors.borderFaint,
+                width: isSelected ? AppDimens.borderWidthMedium : AppDimens.borderWidthThin,
+              ),
+            ),
+            child: Icon(
+              iconData,
+              size: AppDimens.iconMedium,
+              color: isSelected ? AppColors.primary : AppColors.onSurfaceVariant,
             ),
           ),
-          child: Icon(
-            iconData,
-            size: AppDimens.iconMedium,
-            color: isSelected ? AppColors.primary : AppColors.onSurfaceVariant,
-          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Indikator titik di bawah PageView (hanya titik, tanpa teks angka halaman)
+class CategoryPageIndicatorDots extends StatelessWidget {
+  final int pageCount;
+  final int currentPage;
+
+  const CategoryPageIndicatorDots({
+    super.key,
+    required this.pageCount,
+    required this.currentPage,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (pageCount <= 1) {
+      return const SizedBox.shrink();
+    }
+
+    return Semantics(
+      container: true,
+      label: 'Halaman ${currentPage + 1} dari $pageCount',
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          for (int i = 0; i < pageCount; i++) ...[
+            if (i > 0) const SizedBox(width: AppDimens.categoryPickerDotSpacing),
+            CategoryDotItem(
+              isActive: i == currentPage,
+              index: i,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class CategoryDotItem extends StatelessWidget {
+  final bool isActive;
+  final int index;
+
+  const CategoryDotItem({
+    super.key,
+    required this.isActive,
+    required this.index,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final disableAnimations = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    final width = isActive
+        ? AppDimens.categoryPickerDotWidthActive
+        : AppDimens.categoryPickerDotWidthInactive;
+    final color = isActive
+        ? AppColors.categoryPickerDotActive
+        : AppColors.categoryPickerDotInactive;
+
+    return ExcludeSemantics(
+      child: AnimatedContainer(
+        key: Key('category_picker_dot_$index'),
+        duration: disableAnimations ? Duration.zero : AppDurations.fast,
+        curve: Curves.easeInOut,
+        width: width,
+        height: AppDimens.categoryPickerDotHeight,
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(AppDimens.categoryPickerDotHeight / 2),
         ),
       ),
     );
@@ -728,7 +938,10 @@ class _ColorGridTile extends StatelessWidget {
         onTap: onTap,
         customBorder: const CircleBorder(),
         child: Container(
-          constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+          constraints: const BoxConstraints(
+            minWidth: AppDimens.minTouchTarget,
+            minHeight: AppDimens.minTouchTarget,
+          ),
           alignment: Alignment.center,
           child: Container(
             width: 38,
