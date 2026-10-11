@@ -546,6 +546,11 @@ void main() {
       await tester.pumpWidget(MyApp(initialState: state));
       await tester.pumpAndSettle();
 
+      // Alasan pembaruan Milestone NAV-3: Pengelompokan transaksi per hari (BukuKasDayGroup)
+      // dipindahkan dari Beranda ke Tab Riwayat. Beranda kini menampilkan 5 transaksi terbaru.
+      await tester.tap(find.text('Riwayat'));
+      await tester.pumpAndSettle();
+
       // Subtotal positif: "+ Rp 80.000" hijau
       final greenSubtotal = find.text('+ Rp 80.000');
       expect(greenSubtotal, findsOneWidget);

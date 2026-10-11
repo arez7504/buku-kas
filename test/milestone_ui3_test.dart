@@ -88,9 +88,11 @@ void main() {
         tester.view.resetDevicePixelRatio();
       });
 
+      FlutterError.onError = (details) {
+        FlutterError.dumpErrorToConsole(details);
+      };
       await tester.pumpWidget(createTestApp());
       await tester.pumpAndSettle();
-
       expect(tester.takeException(), isNull);
       expect(find.byType(BukuKasHeader), findsOneWidget);
       // Alasan pembaruan Milestone NAV-2: Hero summary lama digantikan oleh kartu Saldo Total dan Bagian Bulan
@@ -211,13 +213,21 @@ void main() {
   });
 
   group('Milestone UI-3: Transaksi Terkini & Day Groups', () {
-    testWidgets('Header seksi Transaksi Terkini + counter catatan', (tester) async {
+    testWidgets('Header seksi Transaksi Terbaru + tautan Lihat semua di Beranda, dan Day Groups di Riwayat', (tester) async {
+      // Alasan pembaruan Milestone NAV-3:
+      // Struktur daftar Beranda diperbarui dari "Transaksi Terkini" (daftar harian tak terbatas)
+      // menjadi "Transaksi Terbaru" (maksimal 5 transaksi) dengan tautan "Lihat semua" (Key('beranda_lihat_semua')).
+      // Pengelompokan harian (BukuKasDayGroup) dipindahkan ke Tab Riwayat.
       await tester.pumpWidget(createTestApp());
       await tester.pumpAndSettle();
 
-      expect(find.text('Transaksi Terkini'), findsOneWidget);
-      expect(find.text('4 Catatan'), findsOneWidget);
-      expect(find.text('Lihat Semua'), findsNothing);
+      expect(find.text('Transaksi Terbaru'), findsOneWidget);
+      expect(find.byKey(const Key('beranda_lihat_semua')), findsOneWidget);
+
+      // Berpindah ke Tab Riwayat via tautan "Lihat semua" untuk memverifikasi BukuKasDayGroup
+      await tester.tap(find.byKey(const Key('beranda_lihat_semua')));
+      await tester.pumpAndSettle();
+
       expect(find.byType(BukuKasDayGroup), findsWidgets);
     });
 

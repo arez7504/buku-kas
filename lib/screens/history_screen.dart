@@ -2,17 +2,24 @@ import 'package:flutter/material.dart';
 import '../logic/finance_state.dart';
 import '../models/transaction.dart';
 import '../theme/app_theme.dart';
-import '../widgets/buku_kas_day_group.dart';
 import '../widgets/buku_kas_header.dart';
 import '../widgets/buku_kas_month_section.dart';
 import '../widgets/buku_kas_saldo_total_card.dart';
+import '../widgets/buku_kas_transaction_row.dart';
 import '../widgets/buku_kas_wallet_bar.dart';
 import 'expense_breakdown_screen.dart';
+import 'main_navigation_screen.dart';
 import 'transaction_form_screen.dart';
 
-/// Layar utama Buku Kas sesuai desain tema gelap fintech baru (UI-3)
+/// Layar Beranda Buku Kas sesuai Milestone NAV-3:
+/// - Bagian atas tetap: Header, Saldo Total, Bulan, Dompet
+/// - Daftar per hari digantikan bagian "Transaksi Terbaru": 5 transaksi terbaru secara keseluruhan
+/// - Tautan "Lihat semua" berpindah ke tab Riwayat (memakai cara pindah tab navigasi, bukan push)
+/// - Jika < 5 tampilkan semua; jika kosong tampilkan pesan kosong
 class HistoryScreen extends StatefulWidget {
-  const HistoryScreen({super.key});
+  final VoidCallback? onViewAllRiwayat;
+
+  const HistoryScreen({super.key, this.onViewAllRiwayat});
 
   @override
   State<HistoryScreen> createState() => _HistoryScreenState();
@@ -71,64 +78,124 @@ class _HistoryScreenState extends State<HistoryScreen> {
     }
   }
 
-  Widget _buildEmptyState() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        vertical: AppDimens.spaceXl,
-        horizontal: AppDimens.margin,
-      ),
-      child: Center(
-        child: Column(
-          children: [
-            const Icon(
-              Icons.auto_stories,
-              size: AppDimens.iconLarge * 1.5,
-              color: AppColors.outlineVariant,
-            ),
-            const SizedBox(height: AppDimens.spaceSm),
-            Text(
-              'Belum ada transaksi di bulan ini',
-              style: AppTypography.bodyMd.copyWith(color: AppColors.onSurfaceVariant),
-            ),
-          ],
-        ),
-      ),
-    );
+  void _onViewAll() {
+    if (widget.onViewAllRiwayat != null) {
+      widget.onViewAllRiwayat!();
+    } else {
+      MainNavigationScope.navigateToTab(context, 1);
+    }
   }
 
-  Widget _buildSectionHeader(int count) {
+  Widget _buildRecentHeader() {
     return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: AppDimens.margin,
         vertical: AppDimens.spaceSm + 2,
       ),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           const Flexible(
             child: Text(
-              'Transaksi Terkini',
+              'Transaksi Terbaru',
               style: AppTypography.sectionTitle,
               overflow: TextOverflow.ellipsis,
             ),
           ),
           const SizedBox(width: AppDimens.spaceSm),
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppDimens.spaceSm,
-              vertical: AppDimens.spaceXs / 2,
-            ),
-            decoration: BoxDecoration(
-              color: AppColors.tintPurpleBg,
-              border: Border.all(color: AppColors.tintPurpleBorder),
-              borderRadius: BorderRadius.circular(AppDimens.radiusFull),
-            ),
-            child: Text(
-              '$count Catatan',
-              style: AppTypography.sectionBadge,
+          GestureDetector(
+            key: const Key('beranda_lihat_semua'),
+            behavior: HitTestBehavior.opaque,
+            onTap: _onViewAll,
+            child: Container(
+              constraints: const BoxConstraints(minHeight: AppDimens.minTouchTarget),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppDimens.spaceSm,
+                vertical: AppDimens.spaceXs,
+              ),
+              alignment: Alignment.centerRight,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Lihat semua',
+                    style: AppTypography.recentTransactionsViewAll,
+                  ),
+                  const SizedBox(width: 4),
+                  const Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 12,
+                    color: AppColors.secondary,
+                  ),
+                ],
+              ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildRecentTransactionsList(List<Transaction> recentTransactions, FinanceState state) {
+    if (recentTransactions.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(
+          vertical: AppDimens.spaceXl,
+          horizontal: AppDimens.margin,
+        ),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.auto_stories,
+                size: AppDimens.iconLarge * 1.5,
+                color: AppColors.outlineVariant,
+              ),
+              const SizedBox(height: AppDimens.spaceSm),
+              Text(
+                'Belum ada transaksi',
+                style: AppTypography.bodyMd.copyWith(color: AppColors.onSurfaceVariant),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppDimens.margin),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.surfaceContainerLowest,
+          border: Border.all(color: AppColors.borderSubtle),
+          borderRadius: BorderRadius.circular(AppDimens.radiusXl),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          children: [
+            for (int i = 0; i < recentTransactions.length; i++) ...[
+              if (i > 0)
+                const Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: AppColors.borderFaint,
+                  indent: AppDimens.spaceMd,
+                  endIndent: AppDimens.spaceMd,
+                ),
+              BukuKasTransactionRow(
+                transaction: recentTransactions[i],
+                walletName: state.getWalletName(recentTransactions[i].walletId),
+                targetWalletName: recentTransactions[i].targetWalletId != null
+                    ? state.getWalletName(recentTransactions[i].targetWalletId!)
+                    : null,
+                categoryName: state.getCategoryName(recentTransactions[i].categoryId),
+                category: state.getCategoryById(recentTransactions[i].categoryId),
+                onTap: () => _openTransactionForm(recentTransactions[i]),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -141,14 +208,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       _selectedMonth.year,
       _selectedMonth.month,
     );
-    final filteredTransactions = state.getTransactionsByMonth(
-      _selectedMonth.year,
-      _selectedMonth.month,
-    );
-    final dailyGroups = state.getDailyTransactionGroups(
-      _selectedMonth.year,
-      _selectedMonth.month,
-    );
+    final recentTransactions = state.getRecentTransactions(limit: 5);
 
     return Scaffold(
       backgroundColor: AppColors.surface,
@@ -175,39 +235,20 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     wallets: state.activeWallets,
                     walletBalances: walletBalances,
                   ),
-                  _buildSectionHeader(filteredTransactions.length),
+                  _buildRecentHeader(),
+                  if (state.isLoading)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: AppDimens.spaceXl),
+                      child: Center(
+                        child: CircularProgressIndicator(color: AppColors.secondary),
+                      ),
+                    )
+                  else
+                    _buildRecentTransactionsList(recentTransactions, state),
+                  const SizedBox(height: AppDimens.bottomListPadding),
                 ],
               ),
             ),
-            if (state.isLoading)
-              const SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: AppDimens.spaceXl),
-                  child: Center(
-                    child: CircularProgressIndicator(color: AppColors.secondary),
-                  ),
-                ),
-              )
-            else if (dailyGroups.isEmpty)
-              SliverToBoxAdapter(
-                child: _buildEmptyState(),
-              )
-            else
-              SliverPadding(
-                padding: const EdgeInsets.only(bottom: AppDimens.bottomListPadding),
-                sliver: SliverList.builder(
-                  itemCount: dailyGroups.length,
-                  itemBuilder: (context, index) {
-                    return BukuKasDayGroup(
-                      group: dailyGroups[index],
-                      getWalletName: state.getWalletName,
-                      getCategoryName: state.getCategoryName,
-                      getCategory: state.getCategoryById,
-                      onTransactionTap: (tx) => _openTransactionForm(tx),
-                    );
-                  },
-                ),
-              ),
           ],
         ),
       ),

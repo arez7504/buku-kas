@@ -3,8 +3,36 @@ import '../theme/app_theme.dart';
 import '../widgets/main_bottom_nav_bar.dart';
 import 'history_screen.dart';
 import 'placeholder_tab_screen.dart';
+import 'riwayat_screen.dart';
 import 'settings_screen.dart';
 import 'transaction_form_screen.dart';
+
+/// Scope untuk mengakses dan mengubah tab aktif pada kerangka navigasi utama
+class MainNavigationScope extends InheritedWidget {
+  final int currentIndex;
+  final ValueChanged<int> onSelectTab;
+
+  const MainNavigationScope({
+    super.key,
+    required this.currentIndex,
+    required this.onSelectTab,
+    required super.child,
+  });
+
+  static MainNavigationScope? maybeOf(BuildContext context) {
+    return context.dependOnInheritedWidgetOfExactType<MainNavigationScope>();
+  }
+
+  static void navigateToTab(BuildContext context, int index) {
+    final scope = maybeOf(context);
+    scope?.onSelectTab(index);
+  }
+
+  @override
+  bool updateShouldNotify(MainNavigationScope oldWidget) {
+    return currentIndex != oldWidget.currentIndex;
+  }
+}
 
 /// Kerangka navigasi utama aplikasi dengan bilah bawah sesuai Milestone NAV-1:
 /// - 4 Tab: Beranda, Riwayat, Statistik, Pengaturan
@@ -52,31 +80,37 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      canPop: _currentIndex == 0,
-      onPopInvokedWithResult: (didPop, result) {
-        if (didPop) return;
-        if (_currentIndex != 0) {
-          setState(() {
-            _currentIndex = 0;
-          });
-        }
-      },
-      child: Scaffold(
-        backgroundColor: AppColors.surface,
-        body: IndexedStack(
-          index: _currentIndex,
-          children: const [
-            HistoryScreen(),
-            PlaceholderTabScreen(title: 'Riwayat'),
-            PlaceholderTabScreen(title: 'Statistik'),
-            SettingsScreen(showBackButton: false),
-          ],
-        ),
-        bottomNavigationBar: MainBottomNavBar(
-          currentIndex: _currentIndex,
-          onTabSelected: _onTabSelected,
-          onCatatPressed: _openCatatForm,
+    return MainNavigationScope(
+      currentIndex: _currentIndex,
+      onSelectTab: _onTabSelected,
+      child: PopScope(
+        canPop: _currentIndex == 0,
+        onPopInvokedWithResult: (didPop, result) {
+          if (didPop) return;
+          if (_currentIndex != 0) {
+            setState(() {
+              _currentIndex = 0;
+            });
+          }
+        },
+        child: Scaffold(
+          backgroundColor: AppColors.surface,
+          body: IndexedStack(
+            index: _currentIndex,
+            children: [
+              HistoryScreen(
+                onViewAllRiwayat: () => _onTabSelected(1),
+              ),
+              const RiwayatScreen(),
+              const PlaceholderTabScreen(title: 'Statistik'),
+              const SettingsScreen(showBackButton: false),
+            ],
+          ),
+          bottomNavigationBar: MainBottomNavBar(
+            currentIndex: _currentIndex,
+            onTabSelected: _onTabSelected,
+            onCatatPressed: _openCatatForm,
+          ),
         ),
       ),
     );

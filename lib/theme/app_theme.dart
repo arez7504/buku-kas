@@ -1323,6 +1323,115 @@ class AppTypography {
     fontWeight: FontWeight.w700,
     fontFeatures: [FontFeature.tabularFigures()],
   );
+
+  // Token Tab Riwayat & Transaksi Terbaru Beranda NAV-3
+  static const TextStyle riwayatScreenTitle = TextStyle(
+    fontFamily: AppFonts.plusJakartaSans,
+    fontSize: 22,
+    fontWeight: FontWeight.w700,
+    color: AppColors.onSurface,
+  );
+
+  static const TextStyle riwayatMonthSelector = TextStyle(
+    fontFamily: AppFonts.plusJakartaSans,
+    fontSize: 14,
+    fontWeight: FontWeight.w700,
+    color: AppColors.onSurface,
+  );
+
+  static const TextStyle riwayatFilterChipActive = TextStyle(
+    fontFamily: AppFonts.plusJakartaSans,
+    fontSize: 13,
+    fontWeight: FontWeight.w700,
+    color: AppColors.primary,
+  );
+
+  static const TextStyle riwayatFilterChipInactive = TextStyle(
+    fontFamily: AppFonts.plusJakartaSans,
+    fontSize: 13,
+    fontWeight: FontWeight.w500,
+    color: AppColors.onSurface,
+  );
+
+  static const TextStyle riwayatSummaryCount = TextStyle(
+    fontFamily: AppFonts.plusJakartaSans,
+    fontSize: 13,
+    fontWeight: FontWeight.w600,
+    color: AppColors.onSurfaceVariant,
+  );
+
+  static const TextStyle riwayatSummaryAmountIncome = TextStyle(
+    fontFamily: AppFonts.plusJakartaSans,
+    fontSize: 13,
+    fontWeight: FontWeight.w700,
+    color: AppColors.incomeGreen,
+    fontFeatures: [FontFeature.tabularFigures()],
+  );
+
+  static const TextStyle riwayatSummaryAmountExpense = TextStyle(
+    fontFamily: AppFonts.plusJakartaSans,
+    fontSize: 13,
+    fontWeight: FontWeight.w700,
+    color: AppColors.expenseRed,
+    fontFeatures: [FontFeature.tabularFigures()],
+  );
+
+  static const TextStyle riwayatEmptyTitle = TextStyle(
+    fontFamily: AppFonts.plusJakartaSans,
+    fontSize: 14,
+    fontWeight: FontWeight.w500,
+    color: AppColors.onSurfaceVariant,
+  );
+
+  static const TextStyle categorySheetTitle = TextStyle(
+    fontFamily: AppFonts.plusJakartaSans,
+    fontSize: 18,
+    fontWeight: FontWeight.w700,
+    color: AppColors.onSurface,
+  );
+
+  static const TextStyle categorySheetHeader = TextStyle(
+    fontFamily: AppFonts.plusJakartaSans,
+    fontSize: 12,
+    fontWeight: FontWeight.w700,
+    letterSpacing: 0.8,
+    color: AppColors.onSurfaceVariant,
+  );
+
+  static const TextStyle categoryItemName = TextStyle(
+    fontFamily: AppFonts.plusJakartaSans,
+    fontSize: 14,
+    fontWeight: FontWeight.w500,
+    color: AppColors.onSurface,
+  );
+
+  static const TextStyle categoryItemNameActive = TextStyle(
+    fontFamily: AppFonts.plusJakartaSans,
+    fontSize: 14,
+    fontWeight: FontWeight.w700,
+    color: AppColors.primary,
+  );
+
+  static const TextStyle categoryItemArchivedBadge = TextStyle(
+    fontFamily: AppFonts.plusJakartaSans,
+    fontSize: 12,
+    fontWeight: FontWeight.w500,
+    color: AppColors.onSurfaceVariant,
+  );
+
+  static const TextStyle recentTransactionsTitle = TextStyle(
+    fontFamily: AppFonts.plusJakartaSans,
+    fontSize: 16,
+    fontWeight: FontWeight.w700,
+    color: AppColors.onSurface,
+  );
+
+  static const TextStyle recentTransactionsViewAll = TextStyle(
+    fontFamily: AppFonts.plusJakartaSans,
+    fontSize: 12,
+    fontWeight: FontWeight.w600,
+    color: AppColors.secondary,
+  );
 }
 
 /// Konfigurasi ThemeData global gelap tunggal

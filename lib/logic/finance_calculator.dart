@@ -50,6 +50,27 @@ class ExpenseBreakdownResult {
   CategoryExpenseBreakdown operator [](int index) => items[index];
 }
 
+/// Jenis penyaring transaksi untuk Tab Riwayat
+enum TransactionFilterType {
+  all,
+  income,
+  expense,
+  transfer,
+}
+
+/// Ringkasan hasil saringan transaksi: jumlah catatan, total pemasukan, dan total pengeluaran
+class FilteredTransactionsSummary {
+  final int transactionCount;
+  final int totalIncome;
+  final int totalExpense;
+
+  const FilteredTransactionsSummary({
+    required this.transactionCount,
+    required this.totalIncome,
+    required this.totalExpense,
+  });
+}
+
 // Logika murni perhitungan keuangan dan filter (dapat diuji tanpa layar Flutter)
 class FinanceCalculator {
   /// Menghitung saldo terkini sebuah dompet berdasarkan:
@@ -279,32 +300,124 @@ class FinanceCalculator {
     );
   }
 
-  /// Mengelompokkan transaksi bulan terpilih per tanggal (tahun-bulan-hari, zona waktu perangkat).
+  /// Menyaring daftar transaksi berdasarkan bulan, tahun, jenis, dan ID kategori.
+  /// Aturan:
+  /// - Jenis all: semua tipe transaksi pada bulan itu.
+  /// - Jenis income/expense/transfer: hanya tipe transaksi tersebut.
+  /// - categoryId terisi: hanya transaksi dengan categoryId itu (berdasarkan ID, bukan nama).
+  ///   Kategori hanya berlaku untuk jenis income, expense, atau all. Untuk transfer, categoryId diabaikan.
+  /// - Kombinasi jenis dan kategori yang bertentangan (contoh: jenis income dengan kategori bertipe expense)
+  ///   menghasilkan daftar kosong.
+  /// - Diurutkan dari yang terbaru (tanggal terbesar) ke terlama.
+  static List<Transaction> filterTransactions({
+    required List<Transaction> transactions,
+    required int year,
+    required int month,
+    TransactionFilterType type = TransactionFilterType.all,
+    String? categoryId,
+    List<Category>? categories,
+  }) {
+    // Validasi pertentangan jenis dan kategori
+    if (categoryId != null && categories != null) {
+      final matchedCats = categories.where((c) => c.id == categoryId);
+      if (matchedCats.isNotEmpty) {
+        final cat = matchedCats.first;
+        if (type == TransactionFilterType.income && cat.type == CategoryType.expense) {
+          return const [];
+        }
+        if (type == TransactionFilterType.expense && cat.type == CategoryType.income) {
+          return const [];
+        }
+      }
+    }
+
+    final filtered = transactions.where((t) {
+      if (t.date.year != year || t.date.month != month) {
+        return false;
+      }
+
+      switch (type) {
+        case TransactionFilterType.all:
+          if (categoryId != null && t.categoryId != categoryId) {
+            return false;
+          }
+          return true;
+
+        case TransactionFilterType.income:
+          if (t.type != TransactionType.income) return false;
+          if (categoryId != null && t.categoryId != categoryId) return false;
+          return true;
+
+        case TransactionFilterType.expense:
+          if (t.type != TransactionType.expense) return false;
+          if (categoryId != null && t.categoryId != categoryId) return false;
+          return true;
+
+        case TransactionFilterType.transfer:
+          if (t.type != TransactionType.transfer) return false;
+          // Untuk transfer, categoryId diabaikan
+          return true;
+      }
+    }).toList();
+
+    filtered.sort((a, b) => b.date.compareTo(a.date));
+    return List.unmodifiable(filtered);
+  }
+
+  /// Menghitung ringkasan hasil saringan: jumlah transaksi, total pemasukan, dan total pengeluaran.
+  /// Sesuai SPEC: Transaksi transfer TIDAK DIHITUNG dalam total pemasukan maupun pengeluaran.
+  /// Nominal integer.
+  static FilteredTransactionsSummary calculateFilteredSummary(
+    List<Transaction> filteredTransactions,
+  ) {
+    int income = 0;
+    int expense = 0;
+
+    for (final t in filteredTransactions) {
+      if (t.type == TransactionType.income) {
+        income += t.amount;
+      } else if (t.type == TransactionType.expense) {
+        expense += t.amount;
+      }
+    }
+
+    return FilteredTransactionsSummary(
+      transactionCount: filteredTransactions.length,
+      totalIncome: income,
+      totalExpense: expense,
+    );
+  }
+
+  /// Mengambil transaksi terbaru secara keseluruhan (tanpa batas bulan),
+  /// diurutkan tanggal terbaru di atas, semua tipe termasuk transfer.
+  /// Jika transaksi kurang dari limit (default: 5), mengembalikan semuanya.
+  static List<Transaction> getRecentTransactions(
+    List<Transaction> transactions, {
+    int limit = 5,
+  }) {
+    if (transactions.isEmpty) return const [];
+    final sorted = List<Transaction>.from(transactions)
+      ..sort((a, b) => b.date.compareTo(a.date));
+    return List.unmodifiable(sorted.take(limit).toList());
+  }
+
+  /// Mengelompokkan transaksi per tanggal (tahun-bulan-hari, zona waktu perangkat).
   /// Urut hari terbaru di atas. Di dalam satu hari, urut transaksi terbaru di atas.
   /// Subtotal harian = total pemasukan dikurangi total pengeluaran hari itu.
   /// Transfer TIDAK dihitung. Jika hari itu hanya berisi transfer, subtotal bernilai null.
-  static List<DailyTransactionGroup> groupTransactionsByDay(
+  static List<DailyTransactionGroup> groupTransactions(
     List<Transaction> transactions,
-    int year,
-    int month,
   ) {
-    // 1. Saring transaksi bulan terpilih berdasarkan waktu lokal perangkat
-    final monthlyTxs = transactions.where((t) {
-      final localDate = t.date.toLocal();
-      return localDate.year == year && localDate.month == month;
-    }).toList();
+    if (transactions.isEmpty) return const [];
 
-    if (monthlyTxs.isEmpty) return [];
-
-    // 2. Kelompokkan per tanggal (Y-M-D)
     final Map<DateTime, List<Transaction>> map = {};
-    for (final tx in monthlyTxs) {
+    for (final tx in transactions) {
       final localDate = tx.date.toLocal();
       final dayKey = DateTime(localDate.year, localDate.month, localDate.day);
       map.putIfAbsent(dayKey, () => []).add(tx);
     }
 
-    // 3. Urutkan hari terbaru di atas
+    // Urutkan hari terbaru di atas
     final sortedDays = map.keys.toList()..sort((a, b) => b.compareTo(a));
 
     final List<DailyTransactionGroup> result = [];
@@ -337,6 +450,22 @@ class FinanceCalculator {
     }
 
     return List.unmodifiable(result);
+  }
+
+  /// Mengelompokkan transaksi bulan terpilih per tanggal (tahun-bulan-hari, zona waktu perangkat).
+  /// Memakai ulang logika groupTransactions.
+  static List<DailyTransactionGroup> groupTransactionsByDay(
+    List<Transaction> transactions,
+    int year,
+    int month,
+  ) {
+    // 1. Saring transaksi bulan terpilih berdasarkan waktu lokal perangkat
+    final monthlyTxs = transactions.where((t) {
+      final localDate = t.date.toLocal();
+      return localDate.year == year && localDate.month == month;
+    }).toList();
+
+    return groupTransactions(monthlyTxs);
   }
 
   /// Format judul tanggal kelompok transaksi:

@@ -8,10 +8,12 @@ void main() {
     // oleh bilah navigasi bawah dengan tombol aksi tengah 'nav_catat'.
     await tester.pumpWidget(const MyApp());
 
-    // Memastikan elemen utama muncul
+    // Alasan pembaruan Milestone NAV-3: Bagian transaksi di Beranda diubah menjadi
+    // 'Transaksi Terbaru' dengan tautan 'Lihat semua' (Key('beranda_lihat_semua')).
     expect(find.text('Buku Kas'), findsOneWidget);
     expect(find.text('AKUN & DOMPET'), findsOneWidget);
-    expect(find.text('Transaksi Terkini'), findsOneWidget);
+    expect(find.text('Transaksi Terbaru'), findsOneWidget);
+    expect(find.byKey(const Key('beranda_lihat_semua')), findsOneWidget);
     expect(find.byKey(const Key('nav_catat')), findsOneWidget);
   });
 

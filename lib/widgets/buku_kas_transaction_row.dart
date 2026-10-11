@@ -121,21 +121,34 @@ class BukuKasTransactionRow extends StatelessWidget {
             ),
             const SizedBox(width: AppDimens.spaceSm),
 
-            // Nominal angka dan kategori huruf kapital kecil di kanan
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  amountText,
-                  style: amountStyle,
-                ),
-                const SizedBox(height: AppDimens.spaceXs / 2),
-                Text(
-                  categoryBadge,
-                  style: AppTypography.transactionCategoryBadge,
-                ),
-              ],
+            // Nominal angka dan kategori huruf kapital kecil di kanan (rata kanan rapi)
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: (MediaQuery.maybeOf(context)?.size.width ?? 360.0) * 0.45,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      amountText,
+                      style: amountStyle,
+                      textAlign: TextAlign.right,
+                    ),
+                  ),
+                  const SizedBox(height: AppDimens.spaceXs / 2),
+                  Text(
+                    categoryBadge,
+                    style: AppTypography.transactionCategoryBadge,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.right,
+                  ),
+                ],
+              ),
             ),
           ],
         ),

@@ -8,6 +8,7 @@ import 'package:catatan_keuangan/models/transaction.dart';
 import 'package:catatan_keuangan/models/wallet.dart';
 import 'package:catatan_keuangan/screens/lock_screen.dart';
 import 'package:catatan_keuangan/screens/placeholder_tab_screen.dart';
+import 'package:catatan_keuangan/screens/riwayat_screen.dart';
 import 'package:catatan_keuangan/screens/settings_screen.dart';
 import 'package:catatan_keuangan/screens/transaction_form_screen.dart';
 import 'package:catatan_keuangan/screens/wallet_management_screen.dart';
@@ -95,13 +96,15 @@ void main() {
       // Pindah ke tab Riwayat
       await tester.tap(riwayatKey);
       await tester.pumpAndSettle();
-      expect(find.byType(PlaceholderTabScreen), findsOneWidget);
+      // Alasan pembaruan Milestone NAV-3: Layar sementara 'Segera hadir' pada tab Riwayat
+      // telah digantikan oleh layar RiwayatScreen sesuai spesifikasi Bagian B.
+      expect(find.byType(RiwayatScreen), findsOneWidget);
       expect(find.text('Riwayat'), findsWidgets);
-      expect(find.text('Segera hadir'), findsOneWidget);
 
       // Pindah ke tab Statistik
       await tester.tap(statistikKey);
       await tester.pumpAndSettle();
+      expect(find.byType(PlaceholderTabScreen), findsOneWidget);
       expect(find.text('Statistik'), findsWidgets);
       expect(find.text('Segera hadir'), findsOneWidget);
 
@@ -150,8 +153,8 @@ void main() {
       // Form tertutup, kembali ke tab asal (Riwayat) dan bilah navigasi kembali terlihat
       expect(find.byType(TransactionFormScreen), findsNothing);
       expect(find.byType(MainBottomNavBar), findsOneWidget);
+      expect(find.byType(RiwayatScreen), findsOneWidget);
       expect(find.text('Riwayat'), findsWidgets);
-      expect(find.text('Segera hadir'), findsOneWidget);
     });
 
     testWidgets('(c) Tombol back Android: dari tab selain Beranda kembali ke Beranda; dari Beranda menutup aplikasi', (tester) async {
